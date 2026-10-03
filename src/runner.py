@@ -96,10 +96,14 @@ def _run(config, resume=False, data=None):
     if existing and existing["status"] == "complete":
         print(f"Already complete: {output}", flush=True)
         return output
+    if existing and existing["hardware"]["device"] != str(device):
+        raise ValueError("Resolved backend changed during resume; use the original device or a new output directory")
     data = load_data(config) if data is None else data
     x, y = data["x"].to(device), data["y"].to(device)
     model = SmallCNN().to(device)
     initial = snapshot(model)
+    if existing and existing["initial_state_sha256"] != state_hash(initial):
+        raise ValueError("Initialization changed during resume; restore the recorded environment before continuing")
     partition_seed = stream_seed(config["seed"], "partition")
     clients = local_val = None
     partition_manifest = None
