@@ -24,7 +24,7 @@ def main():
     args = parser.parse_args()
     release_dir = Path(args.release_dir).resolve()
     release_dir.mkdir(parents=True, exist_ok=True)
-    entries = read_results(ROOT / "outputs")
+    entries = read_results(ROOT / "outputs" / "official")
     if len(entries) != 15:
         raise RuntimeError("Release requires all 15 completed study runs")
     artifacts = ROOT / "artifacts"
