@@ -7,3 +7,8 @@ data/
 outputs/runs/*/seed_*/checkpoints/
 *.tmp
 .DS_Store
+outputs/runs/*/seed_*/.run.lock
+
+artifacts/models/
+artifacts/demo_examples.npz
+outputs/reproduction/

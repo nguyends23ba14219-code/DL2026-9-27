@@ -7,3 +7,4 @@ PyYAML==6.0.2
 streamlit==1.50.0
 pandas==2.3.3
 requests==2.34.2
+filelock==4.0.9

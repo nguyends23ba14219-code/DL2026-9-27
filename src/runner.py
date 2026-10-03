@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import torch
 import yaml
+from filelock import FileLock, Timeout
 
 from src.data.dataset import load_data
 from src.data.partition import partition
@@ -73,7 +74,7 @@ def r80(rows):
     return None
 
 
-def run(config, resume=False, data=None):
+def _run(config, resume=False, data=None):
     torch.set_num_threads(config.get("cpu_threads", 1))
     device = select_device(config["device"])
     seed_all(config["seed"])
@@ -264,3 +265,14 @@ def run(config, resume=False, data=None):
         )
         atomic_json(manifest_path, manifest)
         raise
+
+
+def run(config, resume=False, data=None):
+    output = Path(config["output_dir"]) / "runs" / config["setting"] / f"seed_{config['seed']}"
+    output.mkdir(parents=True, exist_ok=True)
+    lock = FileLock(output / ".run.lock", timeout=0)
+    try:
+        with lock:
+            return _run(config, resume, data)
+    except Timeout as error:
+        raise RuntimeError(f"Another process is already writing this run: {output}") from error
