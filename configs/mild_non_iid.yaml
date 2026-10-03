@@ -1,0 +1,3 @@
+setting: mild_non_iid
+mode: federated
+lambda: 0.5

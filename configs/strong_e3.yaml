@@ -1,0 +1,5 @@
+setting: strong_e3
+mode: federated
+lambda: 0.9
+local_epochs: 3
+rounds: 10
