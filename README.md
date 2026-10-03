@@ -6,6 +6,14 @@ Dự án Deep Learning hoàn chỉnh: tự triển khai **FedAvg bằng PyTorch*
 
 Xem [sơ đồ kiến trúc, API và checkpoint/resume](docs/architecture.md).
 
+| Cấu hình | Test accuracy, mean ± SD (3 seed) |
+|---|---:|
+| Centralized | 90,13 ± 0,14% |
+| FedAvg IID | 83,25 ± 0,58% |
+| Mild Non-IID | 81,93 ± 0,18% |
+| Strong Non-IID | 77,73 ± 0,92% |
+| Strong E3R10 | 77,77 ± 0,60% |
+
 ## Cài đặt
 
 Python **3.12**. Khuyến nghị môi trường ảo. CPU chạy được toàn bộ, CUDA hoặc Apple MPS là tùy chọn.
@@ -59,7 +67,7 @@ Repo lưu logs, metrics, predictions, split/partition indices, bảng và figure
 ```bash
 # Repo riêng tư: gh auth login trước, gh có quyền truy cập tài khoản của anh.
 python experiments/fetch_artifacts.py
-streamlit rundemo/app.py
+streamlit run demo/app.py
 ```
 
 Gói tải được kiểm tra SHA-256 bằng `artifacts/release_manifest.json`. Để tải mọi round và khôi phục đúng archive:
@@ -68,11 +76,14 @@ Gói tải được kiểm tra SHA-256 bằng `artifacts/release_manifest.json`.
 python experiments/fetch_artifacts.py --full
 ```
 
-Artifact đã được train trước. Demo hiển thị đúng setting/seed, trung bình và SD, phân phối client, đường accuracy, confusion matrix và dự đoán một ảnh test. Thiếu artifact sẽ hiển thị “Chưa có kết quả”. Với output tự chạy, đặt `P27_OUTPUT_DIR=outputs/reproduction streamlit rundemo/app.py` và bảo đảm dùng checkpoint cùng output đó.
+Artifact đã được train trước. Demo hiển thị đúng setting/seed, trung bình và SD, phân phối client, đường accuracy, confusion matrix và dự đoán một ảnh test. Thiếu artifact sẽ hiển thị “Chưa có kết quả”. Với output tự chạy, đặt `P27_OUTPUT_DIR=outputs/reproduction streamlit run demo/app.py` và bảo đảm dùng checkpoint cùng output đó.
 
 ## Tái tạo bảng, figures và báo cáo
 
 ```bash
+python experiments/analyze.py
+# Tái tạo minh họa lỗi từ ảnh official test (tải dataset nếu chưa có):
+python experiments/error_examples.py
 python experiments/analyze.py
 ```
 

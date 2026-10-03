@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "completed_runs": 15,
+  "total_training_examples_seen": 24300000,
+  "checks": [
+    "Seed 42: common initialization, common class pairing, identical strong E1/E3 partition",
+    "Seed 43: common initialization, common class pairing, identical strong E1/E3 partition",
+    "Seed 44: common initialization, common class pairing, identical strong E1/E3 partition",
+    "centralized seed 42: complete budget, validation selection, 10k predictions, recomputed metrics, partition coverage",
+    "centralized seed 43: complete budget, validation selection, 10k predictions, recomputed metrics, partition coverage",
+    "centralized seed 44: complete budget, validation selection, 10k predictions, recomputed metrics, partition coverage",
+    "iid seed 42: complete budget, validation selection, 10k predictions, recomputed metrics, partition coverage",
+    "iid seed 43: complete budget, validation selection, 10k predictions, recomputed metrics, partition coverage",
+    "iid seed 44: complete budget, validation selection, 10k predictions, recomputed metrics, partition coverage",
+    "mild_non_iid seed 42: complete budget, validation selection, 10k predictions, recomputed metrics, partition coverage",
+    "mild_non_iid seed 43: complete budget, validation selection, 10k predictions, recomputed metrics, partition coverage",
+    "mild_non_iid seed 44: complete budget, validation selection, 10k predictions, recomputed metrics, partition coverage",
+    "strong_non_iid seed 42: complete budget, validation selection, 10k predictions, recomputed metrics, partition coverage",
+    "strong_non_iid seed 43: complete budget, validation selection, 10k predictions, recomputed metrics, partition coverage",
+    "strong_non_iid seed 44: complete budget, validation selection, 10k predictions, recomputed metrics, partition coverage",
+    "strong_e3 seed 42: complete budget, validation selection, 10k predictions, recomputed metrics, partition coverage",
+    "strong_e3 seed 43: complete budget, validation selection, 10k predictions, recomputed metrics, partition coverage",
+    "strong_e3 seed 44: complete budget, validation selection, 10k predictions, recomputed metrics, partition coverage"
+  ]
+}

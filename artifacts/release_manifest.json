@@ -1,0 +1,21 @@
+{
+  "tag": "v1.0.0",
+  "repository": "nguyends23ba14219-code/federated-image-classification",
+  "assets": {
+    "demo-artifacts.zip": {
+      "sha256": "6878a82f9d3e259ac19878df5701ca9020c03898f7c6590e7a42a9db96446cb6",
+      "bytes": 5952404,
+      "files": 17
+    },
+    "checkpoints.zip": {
+      "sha256": "513d4073d2d5ee93cbe6ec3db13655b9755f59450093f3b43422884ce40a6323",
+      "bytes": 158996542,
+      "files": 405
+    }
+  },
+  "demo_examples": {
+    "source": "Fashion-MNIST official test",
+    "selection": "first 10 official indices per class",
+    "license": "MIT, Zalando Research"
+  }
+}

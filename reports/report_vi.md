@@ -1,54 +1,8 @@
-from pathlib import Path
-import os
-
-import numpy as np
-
-from src.evaluation.tables import LABELS, SETTINGS
-
-
-def make_report(entries, summary, output_dir):
-    figures_link = os.path.relpath(Path(output_dir).resolve() / "figures", Path("reports").resolve())
-    rows = {row["setting"]: row for row in summary}
-    table = "| Cấu hình | Test accuracy (%) | Macro-F1 | Test CE | Seeds |\n|---|---:|---:|---:|---:|\n"
-    for setting in SETTINGS:
-        row = rows[setting]
-        table += f"| {LABELS[setting]} | {100 * row['accuracy_mean']:.2f} ± {100 * row['accuracy_sd']:.2f} | {row['macro_f1_mean']:.4f} ± {row['macro_f1_sd']:.4f} | {row['loss_mean']:.4f} ± {row['loss_sd']:.4f} | {row['n_seeds']} |\n"
-    cen = rows["centralized"]["accuracy_mean"]
-    iid = rows["iid"]["accuracy_mean"]
-    mild = rows["mild_non_iid"]["accuracy_mean"]
-    strong = rows["strong_non_iid"]["accuracy_mean"]
-    e3 = rows["strong_e3"]["accuracy_mean"]
-    cls = np.array([[c["recall"] for c in e["per_class"]] for e in entries if e["setting"] == "strong_non_iid"]).mean(0)
-    worst = int(cls.argmin())
-    from src.data.dataset import CLASS_NAMES
-
-    illustration = next(e for e in entries if e["setting"] == "strong_non_iid" and e["seed"] == 42)
-    matrix = np.array(illustration["confusion_matrix"])
-    np.fill_diagonal(matrix, 0)
-    true, pred = np.unravel_index(matrix.argmax(), matrix.shape)
-
-    def milestone(value):
-        return f"{value:.2f}" if np.isfinite(value) else "Không đạt"
-
-    checkpoints = "\n".join(
-        f"| {LABELS[s]} | {rows[s]['r80_reached']} / 3 | {milestone(rows[s]['r80_round_mean'])} | {milestone(rows[s]['r80_effective_epochs_mean'])} |"
-        for s in SETTINGS
-    )
-    hardware = entries[0]["manifest"]["hardware"]
-    error_illustration = ""
-    if (Path(output_dir) / "figures/07_error_examples.png").exists():
-        error_illustration = (
-            f"![Ví dụ dự đoán sai]({figures_link}/07_error_examples.png)\n\n"
-            "Ảnh minh họa là tám lỗi đầu tiên theo thứ tự official test trong cặp nhầm nhiều nhất, "
-            "strong E1R30 seed 42. Chỉ số ảnh và nhãn nằm trong `outputs/tables/error_examples.csv`; "
-            "không chọn ảnh theo mức độ đẹp hoặc dùng chúng để tune. "
-            "Fashion-MNIST © Zalando Research, MIT.\n\n"
-        )
-    text = f"""# Project 27: Federated Image Classification under Non-IID Data
+# Project 27: Federated Image Classification under Non-IID Data
 
 ## Tóm tắt
 
-Dự án tự triển khai FedAvg bằng PyTorch trên Fashion-MNIST để khảo sát ảnh hưởng của label skew. Nghiên cứu hoàn tất **15 lần chạy thật**, gồm 5 cấu hình × 3 seed (42, 43, 44), với 10 client mô phỏng, CNN 105.866 tham số và cùng ngân sách 30 lượt toàn bộ train pool. Bảng chính dùng checkpoint cuối ngân sách. Test accuracy trung bình của centralized là {cen * 100:.2f}%, IID {iid * 100:.2f}%, mild {mild * 100:.2f}%, strong {strong * 100:.2f}% và strong E3R10 {e3 * 100:.2f}%.
+Dự án tự triển khai FedAvg bằng PyTorch trên Fashion-MNIST để khảo sát ảnh hưởng của label skew. Nghiên cứu hoàn tất **15 lần chạy thật**, gồm 5 cấu hình × 3 seed (42, 43, 44), với 10 client mô phỏng, CNN 105.866 tham số và cùng ngân sách 30 lượt toàn bộ train pool. Bảng chính dùng checkpoint cuối ngân sách. Test accuracy trung bình của centralized là 90.13%, IID 83.25%, mild 81.93%, strong 77.73% và strong E3R10 77.77%.
 
 Tất cả số liệu trong báo cáo sinh từ `outputs/runs/*/seed_*/final_metrics.json` và CSV. Accuracy trong log nằm trong [0,1]. Bảng chuyển accuracy sang phần trăm. Độ lệch chuẩn dùng mẫu, ddof=1, n=3. Dự án không chia công việc theo thành viên.
 
@@ -78,7 +32,7 @@ Tại mỗi seed, tạo một hoán vị nhãn π cố định. Client k ưu th�
 
 Strong vẫn chứa đủ 10 class. Hai class ưu thế chiếm 92% dữ liệu của mỗi client. Quota giữ cố định cả số mẫu/client và tổng mỗi class toàn hệ thống, giúp tách ảnh hưởng label skew khỏi ảnh hưởng số mẫu. Các kiểm tra bảo đảm không lặp index, không thiếu index, tổng hàng/cột đúng và TV=0,8λ. Giữ cùng π cho IID/mild/strong/E3 trong một seed.
 
-![Phân phối client]({figures_link}/01_client_distributions.png)
+![Phân phối client](../outputs/figures/01_client_distributions.png)
 
 ## 4. CNN và thuật toán
 
@@ -100,17 +54,24 @@ Centralized và FL dùng cùng hàm xử lý minibatch. RNG của initialization
 
 So E1R30 với E3R10 giữ số lượt ảnh, thay đồng thời số local epoch và tần suất tổng hợp. Đây là trade-off dưới ngân sách cố định, không đo ảnh hưởng riêng của E khi mọi biến khác giữ nguyên. Số optimizer steps hơi khác do batch cuối: centralized 25.320, FL 25.500. Không suy ra thời gian chạy bằng nhau.
 
-Thiết bị thực tế: `{hardware["device"]}` trên `{hardware["platform"]}`. Các lần chạy CPU dùng một thread mỗi tiến trình và có chạy đồng thời, vì vậy wall time phản ánh cả tranh chấp tài nguyên. Không dùng runtime để tuyên bố tăng tốc phần cứng hay communication thực tế. Manifest lưu phiên bản thư viện, code commit, hash initialization, quota, config và trạng thái.
+Thiết bị thực tế: `cpu` trên `macOS-27.0.1-arm64-arm-64bit`. Các lần chạy CPU dùng một thread mỗi tiến trình và có chạy đồng thời, vì vậy wall time phản ánh cả tranh chấp tài nguyên. Không dùng runtime để tuyên bố tăng tốc phần cứng hay communication thực tế. Manifest lưu phiên bản thư viện, code commit, hash initialization, quota, config và trạng thái.
 
 ## 6. Kết quả cuối ngân sách
 
-{table}
+| Cấu hình | Test accuracy (%) | Macro-F1 | Test CE | Seeds |
+|---|---:|---:|---:|---:|
+| Centralized | 90.13 ± 0.14 | 0.9004 ± 0.0013 | 0.2756 ± 0.0072 | 3 |
+| FedAvg IID | 83.25 ± 0.58 | 0.8317 ± 0.0054 | 0.4588 ± 0.0106 | 3 |
+| FedAvg mild | 81.93 ± 0.18 | 0.8154 ± 0.0026 | 0.4875 ± 0.0039 | 3 |
+| FedAvg strong | 77.73 ± 0.92 | 0.7685 ± 0.0172 | 0.5839 ± 0.0176 | 3 |
+| Strong E3R10 | 77.77 ± 0.60 | 0.7711 ± 0.0099 | 0.5838 ± 0.0196 | 3 |
 
-![So sánh cuối ngân sách]({figures_link}/04_final_comparison.png)
 
-Chênh lệch IID trừ centralized là {(iid - cen) * 100:+.2f} điểm phần trăm. Mild trừ IID là {(mild - iid) * 100:+.2f} điểm, strong trừ IID là {(strong - iid) * 100:+.2f} điểm. Đây là số đo trong thiết kế này, chưa chứng minh centralized luôn là cận trên hay label skew luôn làm giảm accuracy đơn điệu.
+![So sánh cuối ngân sách](../outputs/figures/04_final_comparison.png)
 
-![Test accuracy]({figures_link}/02_test_accuracy.png)
+Chênh lệch IID trừ centralized là -6.88 điểm phần trăm. Mild trừ IID là -1.33 điểm, strong trừ IID là -5.52 điểm. Đây là số đo trong thiết kế này, chưa chứng minh centralized luôn là cận trên hay label skew luôn làm giảm accuracy đơn điệu.
+
+![Test accuracy](../outputs/figures/02_test_accuracy.png)
 
 Đường test được đánh giá lại từ checkpoint sau khi train hoàn tất. Dải màu là mean ± sample SD qua ba seed. Không dùng đường test để chọn hyperparameter hoặc checkpoint. Centralized epoch không đưa vào trục communication round. Mốc đầu round 0 cũng được ghi.
 
@@ -120,32 +81,40 @@ Weighted local train loss là tổng cross entropy trong các cập nhật local
 
 Round 0 chưa có local training. Giá trị 0 trong cột local train loss ở mốc này là sentinel của log, không phải loss đo được, và được loại khỏi biểu đồ local train loss. Validation và test accuracy vẫn có mốc đánh giá round 0.
 
-![Loss]({figures_link}/03_losses.png)
+![Loss](../outputs/figures/03_losses.png)
 
 R@80% là round đầu chuỗi ba round liên tiếp có validation accuracy ≥80%, không tính round 0. Khi không đạt, CSV để trống. Trung bình mốc dưới đây chỉ tính trên seed đạt, luôn kèm số seed đạt.
 
 | Cấu hình | Seed đạt | Mốc trung bình (round/epoch) | Effective epochs trung bình |
 |---|---:|---:|---:|
-{checkpoints}
+| Centralized | 3 / 3 | 2.00 | 2.00 |
+| FedAvg IID | 3 / 3 | 15.33 | 15.33 |
+| FedAvg mild | 3 / 3 | 19.67 | 19.67 |
+| FedAvg strong | 0 / 3 | Không đạt | Không đạt |
+| Strong E3R10 | 0 / 3 | Không đạt | Không đạt |
 
 Mốc ba round tương ứng lượng compute khác nhau giữa E1/E3 nên chỉ là chỉ báo phụ, không phải hội tụ toán học. Bảng phụ `outputs/tables/per_seed.csv` có test accuracy tại checkpoint validation accuracy cao nhất, với quy tắc hòa chọn mốc sớm nhất. Không chọn max test accuracy.
 
 ## 8. Local epochs và phân tích lỗi
 
-E3R10 có test accuracy trung bình {e3 * 100:.2f}%, chênh {(e3 - strong) * 100:+.2f} điểm phần trăm so với E1R30. Số lần tổng hợp giảm từ 30 xuống 10 trong cùng 1.620.000 lượt ảnh. Client local đi xa hơn giữa các lần tổng hợp có thể làm tăng drift. Các số đo ở đây không trực tiếp đo gradient conflict.
+E3R10 có test accuracy trung bình 77.77%, chênh +0.04 điểm phần trăm so với E1R30. Số lần tổng hợp giảm từ 30 xuống 10 trong cùng 1.620.000 lượt ảnh. Client local đi xa hơn giữa các lần tổng hợp có thể làm tăng drift. Các số đo ở đây không trực tiếp đo gradient conflict.
 
-![Local epochs]({figures_link}/06_local_epochs.png)
+![Local epochs](../outputs/figures/06_local_epochs.png)
 
-Trong strong E1, class có recall trung bình thấp nhất là **{CLASS_NAMES[worst]}**, recall={cls[worst]:.4f}. Ở confusion matrix seed 42 được chọn trước, cặp nhầm nhiều nhất ngoài đường chéo là **{CLASS_NAMES[true]} → {CLASS_NAMES[pred]}**, {int(matrix[true, pred])} ảnh. Điều này mô tả lỗi thật, không khẳng định nguyên nhân duy nhất là label skew.
+Trong strong E1, class có recall trung bình thấp nhất là **Shirt**, recall=0.2690. Ở confusion matrix seed 42 được chọn trước, cặp nhầm nhiều nhất ngoài đường chéo là **Shirt → T-shirt/top**, 267 ảnh. Điều này mô tả lỗi thật, không khẳng định nguyên nhân duy nhất là label skew.
 
-![Per class]({figures_link}/07_per_class.png)
+![Per class](../outputs/figures/07_per_class.png)
 
-![Confusion matrix chuẩn hóa]({figures_link}/05_confusion_normalized.png)
+![Confusion matrix chuẩn hóa](../outputs/figures/05_confusion_normalized.png)
 
-{error_illustration}
+![Ví dụ dự đoán sai](../outputs/figures/07_error_examples.png)
+
+Ảnh minh họa là tám lỗi đầu tiên theo thứ tự official test trong cặp nhầm nhiều nhất, strong E1R30 seed 42. Chỉ số ảnh và nhãn nằm trong `outputs/tables/error_examples.csv`; không chọn ảnh theo mức độ đẹp hoặc dùng chúng để tune. Fashion-MNIST © Zalando Research, MIT.
+
+
 Chia validation thành 10 tập độc lập, 600 mẫu/client, cùng π và λ nhưng khác train indices. Strong có 276 mẫu mỗi class ưu thế và 6 mẫu mỗi class còn lại. Đánh giá cùng final global model trên từng tập. Không diễn giải đây là 10 mô hình cá nhân. Client index không đại diện một class pair cố định giữa các seed vì π thay theo seed, nên biểu đồ theo client là mô tả tổng hợp sơ bộ. Histogram từng client/seed nằm trong CSV. Macro-F1 local có thể nhiễu do số mẫu nhỏ ở vài class.
 
-![Local validation]({figures_link}/07_local_validation.png)
+![Local validation](../outputs/figures/07_local_validation.png)
 
 ## 9. Kiểm thử, tái lập và demo
 
@@ -166,7 +135,3 @@ Dự án đã cung cấp pipeline hoàn chỉnh, phép so sánh cùng ngân sác
 3. Karimireddy et al. (2020). SCAFFOLD: Stochastic Controlled Averaging for Federated Learning. https://proceedings.mlr.press/v119/karimireddy20a.html
 4. Zhu et al. (2019). Deep Leakage from Gradients. https://proceedings.neurips.cc/paper/2019/hash/60a6c4002cc7b29142def8871531281a-Abstract.html
 5. PyTorch. Reproducibility. https://docs.pytorch.org/docs/stable/notes/randomness.html
-"""
-    directory = Path("reports")
-    directory.mkdir(exist_ok=True)
-    (directory / "report_vi.md").write_text(text)

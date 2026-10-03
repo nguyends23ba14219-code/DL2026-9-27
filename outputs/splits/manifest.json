@@ -1,0 +1,32 @@
+{
+  "split_seed": 2026,
+  "train": 54000,
+  "validation": 6000,
+  "test": 10000,
+  "train_counts": [
+    5400,
+    5400,
+    5400,
+    5400,
+    5400,
+    5400,
+    5400,
+    5400,
+    5400,
+    5400
+  ],
+  "validation_counts": [
+    600,
+    600,
+    600,
+    600,
+    600,
+    600,
+    600,
+    600,
+    600,
+    600
+  ],
+  "normalization": "(uint8 / 255 - 0.5) / 0.5",
+  "test_source": "official independent test set"
+}

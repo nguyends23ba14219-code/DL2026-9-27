@@ -6,7 +6,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, KeepTogether
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, KeepTogether, PageBreak
 
 root = Path(__file__).resolve().parents[1]
 source = root / "reports/report_vi.md"
@@ -82,6 +82,8 @@ while i < len(lines):
     if line.startswith("# "):
         flow.append(Paragraph(inline(line[2:]), styles["TitleVi"]))
     elif line.startswith("## "):
+        if line == "## Tài liệu tham khảo":
+            flow.append(PageBreak())
         flow.append(Paragraph(inline(line[3:]), styles["HeadingVi"]))
     elif line.startswith("|"):
         rows = []
@@ -117,8 +119,10 @@ while i < len(lines):
                 ]
             )
         )
-        flow.extend([table, Spacer(1, 12)])
+        flow.append(KeepTogether([table, Spacer(1, 12)]))
         continue
+    elif re.match(r"^\d+\.\s", line):
+        flow.append(Paragraph(inline(line), styles["BodyVi"]))
     elif line.startswith("!["):
         match = re.match(r"!\[(.*?)\]\((.*?)\)", line)
         image_path = (source.parent / match.group(2)).resolve()

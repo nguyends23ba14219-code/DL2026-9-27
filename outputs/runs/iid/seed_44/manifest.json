@@ -1,0 +1,193 @@
+{
+  "status": "complete",
+  "config": {
+    "dataset": "Fashion-MNIST",
+    "clients": 10,
+    "split_seed": 2026,
+    "seed": 44,
+    "batch_size": 64,
+    "learning_rate": 0.01,
+    "local_epochs": 1,
+    "rounds": 30,
+    "device": "cpu",
+    "cpu_threads": 1,
+    "data_dir": "data",
+    "output_dir": "outputs",
+    "setting": "iid",
+    "mode": "federated",
+    "lambda": 0
+  },
+  "code_commit": "3aa74967810aa94e244d962f3d7f78823598b7e1",
+  "initial_state_sha256": "3b20668a37c0549e047de5a0d33986634abbcb71529e6a810fee77358128c645",
+  "partition": {
+    "lambda": 0,
+    "seed": 1277093460,
+    "class_permutation": [
+      1,
+      0,
+      5,
+      8,
+      4,
+      3,
+      2,
+      6,
+      9,
+      7
+    ],
+    "counts": [
+      [
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540
+      ],
+      [
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540
+      ],
+      [
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540
+      ],
+      [
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540
+      ],
+      [
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540
+      ],
+      [
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540
+      ],
+      [
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540
+      ],
+      [
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540
+      ],
+      [
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540
+      ],
+      [
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540,
+        540
+      ]
+    ],
+    "samples_per_client": 5400,
+    "total_variation": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "sha256": "2466757490b7799ee7b79baf82a8734877459b7f7018fb80925b95f354226040"
+  },
+  "hardware": {
+    "device": "cpu",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "processor": "arm"
+  },
+  "versions": {
+    "torch": "2.8.0",
+    "torchvision": "0.23.0",
+    "numpy": "2.2.6",
+    "sklearn": "1.7.2"
+  },
+  "protocol": {
+    "checkpoint_selection": "final budget and earliest best validation",
+    "test_access": "after all training rounds",
+    "test_curve": "post-hoc description only",
+    "rng": "stateless seed streams per round/client/epoch"
+  },
+  "last_round": 30,
+  "wall_seconds": 554.1777203329984
+}

@@ -1,4 +1,5 @@
 import hashlib
+import os
 import random
 
 import numpy as np
@@ -12,6 +13,8 @@ def stream_seed(seed, *keys):
 
 
 def seed_all(seed):
+    # Required by deterministic CUDA matrix operations (PyTorch 2.8 reproducibility notes).
+    os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)

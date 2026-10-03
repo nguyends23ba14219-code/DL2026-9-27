@@ -1,0 +1,15 @@
+dataset: Fashion-MNIST
+clients: 10
+split_seed: 2026
+seed: 44
+batch_size: 64
+learning_rate: 0.01
+local_epochs: 3
+rounds: 10
+device: cpu
+cpu_threads: 1
+data_dir: data
+output_dir: outputs
+setting: strong_e3
+mode: federated
+lambda: 0.9

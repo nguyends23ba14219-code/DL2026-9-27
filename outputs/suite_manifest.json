@@ -1,0 +1,96 @@
+{
+  "expected_runs": 15,
+  "completed_runs": 15,
+  "runs": [
+    {
+      "setting": "centralized",
+      "seed": 42,
+      "path": "outputs/runs/centralized/seed_42",
+      "status": "complete"
+    },
+    {
+      "setting": "centralized",
+      "seed": 43,
+      "path": "outputs/runs/centralized/seed_43",
+      "status": "complete"
+    },
+    {
+      "setting": "centralized",
+      "seed": 44,
+      "path": "outputs/runs/centralized/seed_44",
+      "status": "complete"
+    },
+    {
+      "setting": "iid",
+      "seed": 42,
+      "path": "outputs/runs/iid/seed_42",
+      "status": "complete"
+    },
+    {
+      "setting": "iid",
+      "seed": 43,
+      "path": "outputs/runs/iid/seed_43",
+      "status": "complete"
+    },
+    {
+      "setting": "iid",
+      "seed": 44,
+      "path": "outputs/runs/iid/seed_44",
+      "status": "complete"
+    },
+    {
+      "setting": "mild_non_iid",
+      "seed": 42,
+      "path": "outputs/runs/mild_non_iid/seed_42",
+      "status": "complete"
+    },
+    {
+      "setting": "mild_non_iid",
+      "seed": 43,
+      "path": "outputs/runs/mild_non_iid/seed_43",
+      "status": "complete"
+    },
+    {
+      "setting": "mild_non_iid",
+      "seed": 44,
+      "path": "outputs/runs/mild_non_iid/seed_44",
+      "status": "complete"
+    },
+    {
+      "setting": "strong_non_iid",
+      "seed": 42,
+      "path": "outputs/runs/strong_non_iid/seed_42",
+      "status": "complete"
+    },
+    {
+      "setting": "strong_non_iid",
+      "seed": 43,
+      "path": "outputs/runs/strong_non_iid/seed_43",
+      "status": "complete"
+    },
+    {
+      "setting": "strong_non_iid",
+      "seed": 44,
+      "path": "outputs/runs/strong_non_iid/seed_44",
+      "status": "complete"
+    },
+    {
+      "setting": "strong_e3",
+      "seed": 42,
+      "path": "outputs/runs/strong_e3/seed_42",
+      "status": "complete"
+    },
+    {
+      "setting": "strong_e3",
+      "seed": 43,
+      "path": "outputs/runs/strong_e3/seed_43",
+      "status": "complete"
+    },
+    {
+      "setting": "strong_e3",
+      "seed": 44,
+      "path": "outputs/runs/strong_e3/seed_44",
+      "status": "complete"
+    }
+  ]
+}
