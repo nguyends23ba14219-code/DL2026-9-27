@@ -157,3 +157,25 @@ def test_can_overfit_tiny_dataset():
     for epoch in range(40):
         train_local(model, x, y, np.arange(20), cfg, epoch)
     assert (model(x).argmax(1) == y).float().mean() > 0.95
+
+
+def test_evaluation_weights_partial_last_batch():
+    from src.evaluation.metrics import evaluate
+
+    logits = torch.arange(50, dtype=torch.float32).reshape(5, 10)
+    labels = torch.tensor([9, 9, 9, 9, 0])
+    metrics, _, _ = evaluate(torch.nn.Identity(), logits, labels, batch_size=4)
+    expected = torch.nn.functional.cross_entropy(logits, labels).item()
+    assert metrics["loss"] == pytest.approx(expected)
+    assert metrics["accuracy"] == 0.8
+
+
+def test_same_run_has_exclusive_writer_lock(tmp_path):
+    from filelock import FileLock
+
+    cfg = {"output_dir": str(tmp_path), "setting": "locked", "seed": 42}
+    output = tmp_path / "runs/locked/seed_42"
+    output.mkdir(parents=True)
+    with FileLock(output / ".run.lock"):
+        with pytest.raises(RuntimeError, match="already writing this run"):
+            run(cfg)
