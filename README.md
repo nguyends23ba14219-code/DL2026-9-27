@@ -4,6 +4,8 @@ Dự án Deep Learning hoàn chỉnh: tự triển khai **FedAvg bằng PyTorch*
 
 **Protocol:** 10 simulated clients, Small CNN 105.866 parameters, 54.000 train / 6.000 validation / 10.000 official test, split seed 2026, run seeds 42/43/44. Năm cấu hình × ba seed = 15 runs. Bảng kết quả thật có trong [báo cáo](reports/report_vi.md) và [CSV](outputs/tables/summary.csv).
 
+Xem [sơ đồ kiến trúc, API và checkpoint/resume](docs/architecture.md).
+
 ## Cài đặt
 
 Python **3.12**. Khuyến nghị môi trường ảo. CPU chạy được toàn bộ, CUDA hoặc Apple MPS là tùy chọn.

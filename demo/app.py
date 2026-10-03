@@ -72,7 +72,7 @@ with left:
         st.pyplot(fig)
         plt.close(fig)
         with st.expander("Quota chính xác"):
-            st.dataframe(pd.DataFrame(counts, columns=CLASS_NAMES), use_container_width=True)
+            st.dataframe(pd.DataFrame(counts, columns=CLASS_NAMES), width="stretch")
     else:
         st.write("Centralized train trên toàn bộ 54.000 ảnh.")
 with right:
