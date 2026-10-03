@@ -43,6 +43,12 @@ def load_config(path, seed=None):
         config["seed"] = seed
     if config["mode"] not in ("centralized", "federated") or config["rounds"] < 1:
         raise ValueError("Invalid mode or training budget")
+    if config["clients"] != 10 or config["dataset"] != "Fashion-MNIST":
+        raise ValueError("This protocol supports Fashion-MNIST with exactly 10 simulated clients")
+    if config["mode"] == "centralized" and config["local_epochs"] != 1:
+        raise ValueError("Centralized uses one train-pool pass per epoch; local_epochs must be 1")
+    if config["local_epochs"] < 1 or config["batch_size"] < 1 or config["learning_rate"] <= 0:
+        raise ValueError("Local epochs, batch size and learning rate must be positive")
     return config
 
 
