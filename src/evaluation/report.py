@@ -109,6 +109,8 @@ Chênh lệch IID trừ centralized là {(iid - cen) * 100:+.2f} điểm phần 
 
 Weighted local train loss là tổng cross entropy trong các cập nhật local chia cho tổng lượt ảnh trong round. Global validation loss đánh giá model sau aggregation trên tập validation cố định. Hai đại lượng đo trên các model và phân phối khác nhau.
 
+Round 0 chưa có local training. Giá trị 0 trong cột local train loss ở mốc này là sentinel của log, không phải loss đo được, và được loại khỏi biểu đồ local train loss. Validation và test accuracy vẫn có mốc đánh giá round 0.
+
 ![Loss]({figures_link}/03_losses.png)
 
 R@80% là round đầu chuỗi ba round liên tiếp có validation accuracy ≥80%, không tính round 0. Khi không đạt, CSV để trống. Trung bình mốc dưới đây chỉ tính trên seed đạt, luôn kèm số seed đạt.

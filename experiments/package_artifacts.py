@@ -37,7 +37,7 @@ def main():
         labels=dataset.targets.numpy()[indices],
         official_indices=indices,
     )
-    demo_files = [artifacts / "demo_examples.npz"]
+    demo_files = [artifacts / "demo_examples.npz", artifacts / "FASHION-MNIST-LICENSE.txt"]
     checkpoint_files = []
     for entry in entries:
         path = Path(entry["path"])

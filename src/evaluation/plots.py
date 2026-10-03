@@ -23,6 +23,8 @@ def curve(ax, entries, setting, filename, metric, x_key, label=None):
     frames = [pd.read_csv(Path(e["path"]) / filename) for e in entries if e["setting"] == setting]
     if not frames:
         return
+    if metric == "weighted_local_train_loss":
+        frames = [frame[frame["round"] > 0] for frame in frames]
     xs = frames[0][x_key].to_numpy()
     values = np.stack([f[metric].to_numpy() for f in frames])
     mean = values.mean(0)
