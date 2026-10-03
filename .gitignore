@@ -3,7 +3,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .venv/
-data/
+/data/
 outputs/runs/*/seed_*/checkpoints/
 *.tmp
 .DS_Store
