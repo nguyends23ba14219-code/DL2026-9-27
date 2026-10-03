@@ -2,7 +2,7 @@
 
 Dự án Deep Learning hoàn chỉnh: tự triển khai **FedAvg bằng PyTorch**, khảo sát label skew trên Fashion-MNIST, so sánh với centralized, phân tích 3 seed và demo Streamlit. Toàn bộ code và tài liệu dùng một quy trình thống nhất, không phân chia thành viên.
 
-**Protocol:** 10 simulated clients, Small CNN 105.866 parameters, 54.000 train / 6.000 validation / 10.000 official test, split seed 2026, run seeds 42/43/44. Năm cấu hình × ba seed = 15 runs. Bảng kết quả thật sẽ có trong [báo cáo](reports/report_vi.md) và [CSV](outputs/tables/summary.csv).
+**Protocol:** 10 simulated clients, Small CNN 105.866 parameters, 54.000 train / 6.000 validation / 10.000 official test, split seed 2026, run seeds 42/43/44. Năm cấu hình × ba seed = 15 runs. Bảng kết quả thật có trong [báo cáo](reports/report_vi.md) và [CSV](outputs/tables/summary.csv).
 
 ## Cài đặt
 
@@ -57,7 +57,7 @@ Repo lưu logs, metrics, predictions, split/partition indices, bảng và figure
 ```bash
 # Repo riêng tư: gh auth login trước, gh có quyền truy cập tài khoản của anh.
 python experiments/fetch_artifacts.py
-streamlit run demo/app.py
+streamlit rundemo/app.py
 ```
 
 Gói tải được kiểm tra SHA-256 bằng `artifacts/release_manifest.json`. Để tải mọi round và khôi phục đúng archive:
@@ -66,7 +66,7 @@ Gói tải được kiểm tra SHA-256 bằng `artifacts/release_manifest.json`.
 python experiments/fetch_artifacts.py --full
 ```
 
-Artifact đã được train trước. Demo hiển thị đúng setting/seed, trung bình và SD, phân phối client, đường accuracy, confusion matrix và dự đoán một ảnh test. Thiếu artifact sẽ hiển thị “Chưa có kết quả”. Với output tự chạy, đặt `P27_OUTPUT_DIR=outputs/reproduction streamlit run demo/app.py` và bảo đảm dùng checkpoint cùng output đó.
+Artifact đã được train trước. Demo hiển thị đúng setting/seed, trung bình và SD, phân phối client, đường accuracy, confusion matrix và dự đoán một ảnh test. Thiếu artifact sẽ hiển thị “Chưa có kết quả”. Với output tự chạy, đặt `P27_OUTPUT_DIR=outputs/reproduction streamlit rundemo/app.py` và bảo đảm dùng checkpoint cùng output đó.
 
 ## Tái tạo bảng, figures và báo cáo
 
@@ -75,6 +75,17 @@ python experiments/analyze.py
 ```
 
 Lệnh yêu cầu đủ 15 run hoàn tất, không tự điền số liệu thiếu. Sinh 7 nhóm figures (PNG/PDF), bảng mean ± sample SD (ddof=1), số từng seed, class/client và `reports/report_vi.md`. Bảng chính dùng checkpoint cuối ngân sách. Bảng phụ dùng checkpoint validation tốt nhất, hòa chọn mốc sớm. Test curves được đánh giá sau train, không dùng test để tune.
+
+## Báo cáo và bảo vệ
+
+Báo cáo tiếng Việt: [PDF](reports/report_vi.pdf), [Markdown](reports/report_vi.md). Slide: [PPTX 12 slide](reports/project27-defense.pptx). [Kịch bản 12 phút và câu hỏi bảo vệ](reports/defense_notes_vi.md).
+
+```bash
+python -m pip install -r requirements-docs.txt
+python experiments/export_pdf.py
+```
+
+PDF exporter cần font Arial hoặc DejaVu Sans chứa ký tự tiếng Việt.
 
 ## Cấu trúc
 
@@ -91,8 +102,8 @@ outputs/                  # Split/partition indices, run logs, metrics, figures,
 notebooks/                # Colab quickstart, gọi lại code repo
 artifacts/                # Release manifest, tải model/demo bundle tại đây
 reports/                  # Báo cáo, slide bảo vệ và kịch bản 12 phút
- demo/app.py              # Streamlit chỉ đọc kết quả đã train
- tests/                   # Data integrity, FedAvg, metrics, CNN, resume, sanity checks
+demo/app.py              # Streamlit chỉ đọc kết quả đã train
+tests/                   # Data integrity, FedAvg, metrics, CNN, resume, sanity checks
 ```
 
 ## Phạm vi và nguồn

@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 import numpy as np
 
@@ -6,6 +7,7 @@ from src.evaluation.tables import LABELS, SETTINGS
 
 
 def make_report(entries, summary, output_dir):
+    figures_link = os.path.relpath(Path(output_dir).resolve() / "figures", Path("reports").resolve())
     rows = {row["setting"]: row for row in summary}
     table = "| Cấu hình | Test accuracy (%) | Macro-F1 | Test CE | Seeds |\n|---|---:|---:|---:|---:|\n"
     for setting in SETTINGS:
@@ -24,8 +26,12 @@ def make_report(entries, summary, output_dir):
     matrix = np.array(illustration["confusion_matrix"])
     np.fill_diagonal(matrix, 0)
     true, pred = np.unravel_index(matrix.argmax(), matrix.shape)
+
+    def milestone(value):
+        return f"{value:.2f}" if np.isfinite(value) else "Không đạt"
+
     checkpoints = "\n".join(
-        f"| {LABELS[s]} | {rows[s]['r80_reached']} / 3 | {rows[s]['r80_round_mean']:.2f} | {rows[s]['r80_effective_epochs_mean']:.2f} |"
+        f"| {LABELS[s]} | {rows[s]['r80_reached']} / 3 | {milestone(rows[s]['r80_round_mean'])} | {milestone(rows[s]['r80_effective_epochs_mean'])} |"
         for s in SETTINGS
     )
     hardware = entries[0]["manifest"]["hardware"]
@@ -63,7 +69,7 @@ Tại mỗi seed, tạo một hoán vị nhãn π cố định. Client k ưu th�
 
 Strong vẫn chứa đủ 10 class. Hai class ưu thế chiếm 92% dữ liệu của mỗi client. Quota giữ cố định cả số mẫu/client và tổng mỗi class toàn hệ thống, giúp tách ảnh hưởng label skew khỏi ảnh hưởng số mẫu. Các kiểm tra bảo đảm không lặp index, không thiếu index, tổng hàng/cột đúng và TV=0,8λ. Giữ cùng π cho IID/mild/strong/E3 trong một seed.
 
-![Phân phối client](../{output_dir}/figures/01_client_distributions.png)
+![Phân phối client]({figures_link}/01_client_distributions.png)
 
 ## 4. CNN và thuật toán
 
@@ -91,11 +97,11 @@ Thiết bị thực tế: `{hardware["device"]}` trên `{hardware["platform"]}`.
 
 {table}
 
-![So sánh cuối ngân sách](../{output_dir}/figures/04_final_comparison.png)
+![So sánh cuối ngân sách]({figures_link}/04_final_comparison.png)
 
 Chênh lệch IID trừ centralized là {(iid - cen) * 100:+.2f} điểm phần trăm. Mild trừ IID là {(mild - iid) * 100:+.2f} điểm, strong trừ IID là {(strong - iid) * 100:+.2f} điểm. Đây là số đo trong thiết kế này, chưa chứng minh centralized luôn là cận trên hay label skew luôn làm giảm accuracy đơn điệu.
 
-![Test accuracy](../{output_dir}/figures/02_test_accuracy.png)
+![Test accuracy]({figures_link}/02_test_accuracy.png)
 
 Đường test được đánh giá lại từ checkpoint sau khi train hoàn tất. Dải màu là mean ± sample SD qua ba seed. Không dùng đường test để chọn hyperparameter hoặc checkpoint. Centralized epoch không đưa vào trục communication round. Mốc đầu round 0 cũng được ghi.
 
@@ -103,11 +109,11 @@ Chênh lệch IID trừ centralized là {(iid - cen) * 100:+.2f} điểm phần 
 
 Weighted local train loss là tổng cross entropy trong các cập nhật local chia cho tổng lượt ảnh trong round. Global validation loss đánh giá model sau aggregation trên tập validation cố định. Hai đại lượng đo trên các model và phân phối khác nhau.
 
-![Loss](../{output_dir}/figures/03_losses.png)
+![Loss]({figures_link}/03_losses.png)
 
 R@80% là round đầu chuỗi ba round liên tiếp có validation accuracy ≥80%, không tính round 0. Khi không đạt, CSV để trống. Trung bình mốc dưới đây chỉ tính trên seed đạt, luôn kèm số seed đạt.
 
-| Cấu hình | Seed đạt | Round trung bình khi đạt | Effective epochs trung bình |
+| Cấu hình | Seed đạt | Mốc trung bình (round/epoch) | Effective epochs trung bình |
 |---|---:|---:|---:|
 {checkpoints}
 
@@ -117,17 +123,17 @@ Mốc ba round tương ứng lượng compute khác nhau giữa E1/E3 nên chỉ
 
 E3R10 có test accuracy trung bình {e3 * 100:.2f}%, chênh {(e3 - strong) * 100:+.2f} điểm phần trăm so với E1R30. Số lần tổng hợp giảm từ 30 xuống 10 trong cùng 1.620.000 lượt ảnh. Client local đi xa hơn giữa các lần tổng hợp có thể làm tăng drift. Các số đo ở đây không trực tiếp đo gradient conflict.
 
-![Local epochs](../{output_dir}/figures/06_local_epochs.png)
+![Local epochs]({figures_link}/06_local_epochs.png)
 
 Trong strong E1, class có recall trung bình thấp nhất là **{CLASS_NAMES[worst]}**, recall={cls[worst]:.4f}. Ở confusion matrix seed 42 được chọn trước, cặp nhầm nhiều nhất ngoài đường chéo là **{CLASS_NAMES[true]} → {CLASS_NAMES[pred]}**, {int(matrix[true, pred])} ảnh. Điều này mô tả lỗi thật, không khẳng định nguyên nhân duy nhất là label skew.
 
-![Per class](../{output_dir}/figures/07_per_class.png)
+![Per class]({figures_link}/07_per_class.png)
 
-![Confusion matrix chuẩn hóa](../{output_dir}/figures/05_confusion_normalized.png)
+![Confusion matrix chuẩn hóa]({figures_link}/05_confusion_normalized.png)
 
 Chia validation thành 10 tập độc lập, 600 mẫu/client, cùng π và λ nhưng khác train indices. Strong có 276 mẫu mỗi class ưu thế và 6 mẫu mỗi class còn lại. Đánh giá cùng final global model trên từng tập. Không diễn giải đây là 10 mô hình cá nhân. Client index không đại diện một class pair cố định giữa các seed vì π thay theo seed, nên biểu đồ theo client là mô tả tổng hợp sơ bộ. Histogram từng client/seed nằm trong CSV. Macro-F1 local có thể nhiễu do số mẫu nhỏ ở vài class.
 
-![Local validation](../{output_dir}/figures/07_local_validation.png)
+![Local validation]({figures_link}/07_local_validation.png)
 
 ## 9. Kiểm thử, tái lập và demo
 

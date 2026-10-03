@@ -35,8 +35,10 @@ def curve(ax, entries, setting, filename, metric, x_key, label=None):
 def make_plots(entries, output_dir):
     directory = Path(output_dir) / "figures"
     directory.mkdir(parents=True, exist_ok=True)
-    plt.rcParams.update({"font.size": 10, "axes.spines.top": False, "axes.spines.right": False})
-    fig, axes = plt.subplots(1, 3, figsize=(14, 4.7), constrained_layout=True)
+    plt.rcParams.update({"font.size": 12, "axes.spines.top": False, "axes.spines.right": False})
+    fig, grid = plt.subplots(2, 2, figsize=(9.4, 8.3), constrained_layout=True)
+    axes = grid.flatten()[:3]
+    grid.flatten()[3].axis("off")
     for ax, setting in zip(axes, SETTINGS[1:4]):
         item = next(e for e in entries if e["setting"] == setting and e["seed"] == 42)
         counts = np.array(item["manifest"]["partition"]["counts"])
@@ -52,7 +54,7 @@ def make_plots(entries, output_dir):
                     str(counts[k, c]),
                     ha="center",
                     va="center",
-                    fontsize=6,
+                    fontsize=8,
                     color="white" if counts[k, c] > 1500 else "#222222",
                 )
     fig.colorbar(image, ax=axes, label="Training samples")
@@ -91,7 +93,8 @@ def make_plots(entries, output_dir):
     fig.tight_layout()
     save(fig, directory, "04_final_comparison")
     for normalized in [False, True]:
-        fig, axes = plt.subplots(1, 4, figsize=(16, 4.5), constrained_layout=True)
+        fig, grid = plt.subplots(2, 2, figsize=(10, 8.5), constrained_layout=True)
+        axes = grid.flatten()
         for ax, setting in zip(axes, SETTINGS[:4]):
             item = next(e for e in entries if e["setting"] == setting and e["seed"] == 42)
             key = "confusion_matrix_normalized" if normalized else "confusion_matrix"
@@ -112,7 +115,7 @@ def make_plots(entries, output_dir):
         ax.legend()
         ax.grid(alpha=0.2)
     save(fig, directory, "06_local_epochs")
-    fig, axes = plt.subplots(1, 2, figsize=(14, 4.8))
+    fig, axes = plt.subplots(2, 1, figsize=(10, 8.8))
     for setting in SETTINGS[:4]:
         group = [e for e in entries if e["setting"] == setting]
         for ax, metric in zip(axes, ["recall", "f1"]):
