@@ -50,7 +50,7 @@ def make_report(entries, summary, output_dir):
 
 Dự án tự triển khai FedAvg bằng PyTorch trên Fashion-MNIST để khảo sát ảnh hưởng của label skew. Nghiên cứu hoàn tất **15 lần chạy thật**, gồm 5 cấu hình × 3 seed (42, 43, 44), với 10 client mô phỏng, CNN 105.866 tham số và cùng ngân sách 30 lượt toàn bộ train pool. Bảng chính dùng checkpoint cuối ngân sách. Test accuracy trung bình của centralized là {cen * 100:.2f}%, IID {iid * 100:.2f}%, mild {mild * 100:.2f}%, strong {strong * 100:.2f}% và strong E3R10 {e3 * 100:.2f}%.
 
-Tất cả số liệu trong báo cáo sinh từ `outputs/runs/*/seed_*/final_metrics.json` và CSV. Accuracy trong log nằm trong [0,1]. Bảng chuyển accuracy sang phần trăm. Độ lệch chuẩn dùng mẫu, ddof=1, n=3. Dự án không chia công việc theo thành viên.
+Tất cả số liệu trong báo cáo sinh từ `outputs/runs/*/seed_*/final_metrics.json` và CSV. Accuracy trong log nằm trong [0,1]. Bảng chuyển accuracy sang phần trăm. Độ lệch chuẩn dùng mẫu, ddof=1, n=3. Bản report nộp của Nhóm 9 và bảng trách nhiệm thành viên nằm trong `reports/9_27_Report.pdf`.
 
 ## 1. Bài toán và phạm vi
 

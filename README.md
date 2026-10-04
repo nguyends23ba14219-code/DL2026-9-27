@@ -1,8 +1,10 @@
-# Project 27 — Federated Image Classification under Non-IID Data
+# DL2026-9-27 — Federated Image Classification under Non-IID Data
 
-Dự án Deep Learning hoàn chỉnh: tự triển khai **FedAvg bằng PyTorch**, khảo sát label skew trên Fashion-MNIST, so sánh với centralized, phân tích 3 seed và demo Streamlit. Toàn bộ code và tài liệu dùng một quy trình thống nhất, không phân chia thành viên.
+Dự án Deep Learning hoàn chỉnh: tự triển khai **FedAvg bằng PyTorch**, khảo sát label skew trên Fashion-MNIST, so sánh với centralized, phân tích 3 seed và demo Streamlit. Nhóm 9, topic 27. Nhóm trưởng: Nguyễn Duy Dũng (23BA14069). Bảng trách nhiệm hoàn thiện và kiểm tra của sáu thành viên nằm trong phụ lục report.
 
 **Protocol:** 10 simulated clients, Small CNN 105.866 parameters, 54.000 train / 6.000 validation / 10.000 official test, split seed 2026, run seeds 42/43/44. Năm cấu hình × ba seed = 15 runs. Bảng kết quả thật có trong [báo cáo](reports/report_vi.md) và [CSV](outputs/tables/summary.csv).
+
+Bản nộp chính: [9_27_Report.pdf](reports/9_27_Report.pdf) (tiếng Anh, 13 trang nội dung chính), [nguồn Markdown](reports/9_27_Report.md) và [overview 4 slide / 3 phút](reports/9_27_Overview.pptx). Xem [DATA.md](DATA.md) và [đối chiếu yêu cầu nộp](docs/submission_requirements.md).
 
 Xem [sơ đồ kiến trúc, API và checkpoint/resume](docs/architecture.md).
 
@@ -19,8 +21,8 @@ Xem [sơ đồ kiến trúc, API và checkpoint/resume](docs/architecture.md).
 Python **3.12**. Khuyến nghị môi trường ảo. CPU chạy được toàn bộ, CUDA hoặc Apple MPS là tùy chọn.
 
 ```bash
-git clone https://github.com/nguyends23ba14219-code/federated-image-classification.git
-cd federated-image-classification
+git clone https://github.com/nguyends23ba14219-code/DL2026-9-27.git
+cd DL2026-9-27
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-dev.txt
@@ -28,6 +30,14 @@ python -m pytest -q
 ```
 
 Các phiên bản thư viện chính được pin trong `requirements.txt`. Môi trường dùng cho kết quả có snapshot trong `requirements-lock.txt`. Đã kiểm tra Python 3.12 trên macOS arm64, CPU. Notebook Colab cung cấp đường chạy CUDA nhưng không tuyên bố đã kiểm tra trực tiếp trên Colab. Reproducibility bitwise áp dụng cùng môi trường/backend, không bảo đảm giống bit qua CPU/CUDA/MPS.
+
+## Chuẩn bị dữ liệu độc lập
+
+```bash
+python experiments/prepare_data.py --output-dir outputs/reproduction
+```
+
+Lệnh tải dữ liệu chính thức, kiểm tra checksum, tạo split và chín client partitions mà không train. Chi tiết version, nguồn, nhãn và preprocessing ở [DATA.md](DATA.md).
 
 ## Chạy một cấu hình
 
@@ -91,14 +101,16 @@ Lệnh yêu cầu đủ 15 run hoàn tất, không tự điền số liệu thi�
 
 ## Báo cáo và bảo vệ
 
-Báo cáo tiếng Việt: [PDF](reports/report_vi.pdf), [Markdown](reports/report_vi.md). Slide: [PPTX 12 slide](reports/project27-defense.pptx). [Kịch bản 12 phút và câu hỏi bảo vệ](reports/defense_notes_vi.md).
+Báo cáo nộp tiếng Anh: [9_27_Report.pdf](reports/9_27_Report.pdf), [Markdown](reports/9_27_Report.md). Overview chính: [4 slide](reports/9_27_Overview.pptx), tối đa **3 phút**, sau đó **12 phút Q/A**. [Kịch bản và câu hỏi bảo vệ](reports/defense_notes_vi.md). Báo cáo tiếng Việt và deck 12 slide cũ chỉ là tài liệu tham khảo bổ sung, không dùng làm overview thi.
 
 ```bash
 python -m pip install -r requirements-docs.txt
-python experiments/export_pdf.py
+python experiments/build_submission.py
 ```
 
-PDF exporter cần font Arial hoặc DejaVu Sans chứa ký tự tiếng Việt.
+Overview PPTX được cung cấp sẵn, chỉnh sửa được trong PowerPoint. Script nguồn JavaScript `experiments/build_overview.mjs` dùng Artifact Tool khi môi trường có thư viện này; không cần nó để tái lập thực nghiệm hoặc PDF.
+
+PDF builder dùng Times New Roman hoặc DejaVu Serif, kiểm tra abstract 150–200 từ và đủ 18 trang tổng: bìa + mục lục + 13 trang nội dung + References + 2 trang Appendix. Có 7 tài liệu tham khảo. Sửa `reports/members.json` nếu nhóm cập nhật trách nhiệm, sau đó build lại.
 
 ## Cấu trúc
 
@@ -114,7 +126,7 @@ experiments/              # Suite, analysis, artifact export/fetch, audit
 outputs/                  # Split/partition indices, run logs, metrics, figures, tables
 notebooks/                # Colab quickstart, gọi lại code repo
 artifacts/                # Release manifest, tải model/demo bundle tại đây
-reports/                  # Báo cáo, slide bảo vệ và kịch bản 12 phút
+reports/                  # English report, 4-slide overview and 3-minute script
 demo/app.py              # Streamlit chỉ đọc kết quả đã train
 tests/                   # Data integrity, FedAvg, metrics, CNN, resume, sanity checks
 ```

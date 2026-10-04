@@ -1,0 +1,38 @@
+{
+  "group": 9,
+  "topic": 27,
+  "confirmed": true,
+  "leader": "Nguyễn Duy Dũng (23BA14069)",
+  "members": [
+    {
+      "name": "Đồng Sỹ Nguyên",
+      "student_id": "23BA14219",
+      "responsibility": "FedAvg implementation and final integration review"
+    },
+    {
+      "name": "Đỗ Xuân Nguyên",
+      "student_id": "23BA14217",
+      "responsibility": "Dataset provenance, split and preprocessing review"
+    },
+    {
+      "name": "Nguyễn Bình Minh",
+      "student_id": "23BA14197",
+      "responsibility": "Non-IID partition and quota validation review"
+    },
+    {
+      "name": "Nguyễn Hồng Quân",
+      "student_id": "23BA14237",
+      "responsibility": "CNN architecture and training-loop review"
+    },
+    {
+      "name": "Nguyễn Duy Dũng",
+      "student_id": "23BA14069",
+      "responsibility": "Experiment reproduction, submission coordination and group leadership"
+    },
+    {
+      "name": "Doãn Trung Dũng",
+      "student_id": "23BA14070",
+      "responsibility": "Metrics, report and inference-demo verification"
+    }
+  ]
+}

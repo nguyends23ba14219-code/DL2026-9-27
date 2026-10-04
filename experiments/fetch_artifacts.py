@@ -9,7 +9,6 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-REPOSITORY = "nguyends23ba14219-code/federated-image-classification"
 
 
 def main():
@@ -25,7 +24,18 @@ def main():
     name = "checkpoints.zip" if args.full else "demo-artifacts.zip"
     with tempfile.TemporaryDirectory() as directory:
         subprocess.run(
-            ["gh", "release", "download", manifest["tag"], "--repo", REPOSITORY, "--pattern", name, "--dir", directory],
+            [
+                "gh",
+                "release",
+                "download",
+                manifest["tag"],
+                "--repo",
+                manifest["repository"],
+                "--pattern",
+                name,
+                "--dir",
+                directory,
+            ],
             check=True,
         )
         archive = Path(directory) / name
