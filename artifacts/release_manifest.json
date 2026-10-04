@@ -1,15 +1,15 @@
 {
   "tag": "v1.0.0",
-  "repository": "nguyends23ba14219-code/federated-image-classification",
+  "repository": "nguyends23ba14219-code/DL2026-9-27",
   "assets": {
     "demo-artifacts.zip": {
-      "sha256": "89d432ab215f680ad137ecd3f3364f0604bcfea2ce732c9fc62bcf9ddab64a5d",
-      "bytes": 5952109,
+      "sha256": "6878a82f9d3e259ac19878df5701ca9020c03898f7c6590e7a42a9db96446cb6",
+      "bytes": 5952404,
       "files": 17
     },
     "checkpoints.zip": {
-      "sha256": "8d04928fafa4128851b81b44ce61f057e46afc32266acc8e4fe9fd49ffff1568",
-      "bytes": 159002676,
+      "sha256": "513d4073d2d5ee93cbe6ec3db13655b9755f59450093f3b43422884ce40a6323",
+      "bytes": 158996542,
       "files": 405
     }
   },

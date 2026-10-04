@@ -18,13 +18,23 @@ from src.utils.logging import atomic_json
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def round_checkpoints(path, rounds):
+    files = [Path(path) / "checkpoints" / f"round_{r:03d}.pt" for r in range(rounds + 1)]
+    missing = [str(file) for file in files if not file.is_file()]
+    if missing:
+        raise RuntimeError(f"Incomplete checkpoint archive: missing {missing[0]}")
+    return files
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--release-dir", required=True)
+    parser.add_argument("--output-dir", default="outputs", help="Directory containing the 15 completed runs")
     args = parser.parse_args()
     release_dir = Path(args.release_dir).resolve()
     release_dir.mkdir(parents=True, exist_ok=True)
-    entries = read_results(ROOT / "outputs" / "official")
+    output_dir = (ROOT / args.output_dir).resolve()
+    entries = read_results(output_dir)
     if len(entries) != 15:
         raise RuntimeError("Release requires all 15 completed study runs")
     artifacts = ROOT / "artifacts"
@@ -47,13 +57,18 @@ def main():
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(checkpoint, target)
         demo_files.append(target)
-        checkpoint_files.extend(sorted((path / "checkpoints").glob("round_*.pt")))
+        checkpoint_files.extend(round_checkpoints(path, config["rounds"]))
     assets = {}
     for name, files in [("demo-artifacts.zip", demo_files), ("checkpoints.zip", checkpoint_files)]:
         archive = release_dir / name
         with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as bundle:
             for file in files:
-                bundle.write(file, file.relative_to(ROOT))
+                archive_path = (
+                    Path("outputs") / file.relative_to(output_dir)
+                    if name == "checkpoints.zip"
+                    else file.relative_to(ROOT)
+                )
+                bundle.write(file, archive_path)
         with archive.open("rb") as handle:
             digest = hashlib.file_digest(handle, "sha256").hexdigest()
         assets[name] = {"sha256": digest, "bytes": archive.stat().st_size, "files": len(files)}
@@ -61,7 +76,7 @@ def main():
         artifacts / "release_manifest.json",
         {
             "tag": "v1.0.0",
-            "repository": "nguyends23ba14219-code/federated-image-classification",
+            "repository": "nguyends23ba14219-code/DL2026-9-27",
             "assets": assets,
             "demo_examples": {
                 "source": "Fashion-MNIST official test",

@@ -13,3 +13,4 @@ jobs:
       - run: python -m pip install -r requirements-dev.txt
       - run: ruff check .
       - run: python -m pytest -q
+      - run: python experiments/audit.py
