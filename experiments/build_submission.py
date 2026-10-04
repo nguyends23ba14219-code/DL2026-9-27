@@ -1,4 +1,4 @@
-"""Build the Group 9 report and exactly four overview slides from recorded outputs."""
+"""Build the Group 9 report from recorded outputs."""
 
 import argparse
 import csv
@@ -403,145 +403,6 @@ def build_pdf(source, members):
     return target
 
 
-def build_slides(summary):
-    from pptx import Presentation
-    from pptx.dml.color import RGBColor
-    from pptx.util import Inches, Pt
-
-    prs = Presentation()
-    prs.slide_width = Inches(13.333)
-    prs.slide_height = Inches(7.5)
-    navy = RGBColor(25, 46, 85)
-
-    def textbox(slide, x, y, w, h, text, size=23, bold=False):
-        tf = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h)).text_frame
-        tf.word_wrap = True
-        for i, line in enumerate(text.split("\n")):
-            p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
-            p.text = line
-            p.font.name = "Arial"
-            p.font.size = Pt(size)
-            p.font.bold = bold
-            p.font.color.rgb = navy
-            p.space_after = Pt(18)
-        return tf
-
-    titles = ["Problem & Research Question", "Method & Experiments", "Key Results", "Conclusion / Demo"]
-    notes = [
-        "0:00-0:40. We study image classification when clients hold different label proportions. "
-        "Ten simulated clients keep equal data quantities. Our questions concern the centralized gap, "
-        "the effect of label skew and the trade-off between local epochs and aggregation rounds.",
-        "0:40-1:25. All configurations use one CNN and the same train/validation/test split. "
-        "We implement weighted FedAvg with a common round snapshot. The quota design gives lambda 0, "
-        "0.5 and 0.9. Setup 1 is centralized versus IID. Setup 2 varies skew. Setup 3 compares strong "
-        "E1R30 with E3R10 at equal exposure. Five configurations and three seeds give fifteen runs.",
-        "1:25-2:15. Accuracy falls from centralized to IID and further under strong skew. "
-        "The gap between IID and strong is 5.52 percentage points. E3R10 and E1R30 have similar "
-        "observed means, but three seeds do not prove equivalence. The table uses final checkpoints "
-        "and sample SD. No test-based checkpoint selection is used.",
-        "2:15-2:55. The findings apply to this small CNN and synthetic label skew. "
-        "Client drift is a plausible explanation, not directly measured. Shirt is the weakest class. "
-        "For the demo, load pretrained artifacts before the exam, choose strong seed 42 and display "
-        "one prediction. The demo is inference from a trained checkpoint. Stop by three minutes. "
-        "The following twelve minutes are examiner questions for any group member.",
-    ]
-    slides = []
-    for title, note in zip(titles, notes):
-        slide = prs.slides.add_slide(prs.slide_layouts[6])
-        textbox(slide, 0.65, 0.4, 12, 0.65, title, 34, True)
-        textbox(slide, 0.65, 6.98, 12, 0.3, "Group 9 - Topic 27", 12)
-        slide.notes_slide.notes_text_frame.text = note
-        slides.append(slide)
-    textbox(slides[0], 0.7, 1.45, 11.9, 1.1, "Federated Image Classification\nunder Non-IID Data", 38, True)
-    textbox(
-        slides[0],
-        0.7,
-        3.1,
-        11.8,
-        2.9,
-        "How does client label skew change global classification quality?\n"
-        "10 clients, equal image counts, different label proportions.\n"
-        "Compare centralized training, skew severity and local epochs.",
-        26,
-    )
-    textbox(
-        slides[1],
-        0.7,
-        1.45,
-        12,
-        1.1,
-        "Fashion-MNIST: 54k train / 6k validation / 10k test\n"
-        "Small CNN, 105,866 parameters. Weighted FedAvg in PyTorch.",
-        24,
-    )
-    textbox(
-        slides[1],
-        0.7,
-        3.0,
-        11.8,
-        3.5,
-        "Setup 1: Centralized versus FedAvg IID\n"
-        "Setup 2: IID, mild and strong label skew\n"
-        "Setup 3: Strong E1R30 versus E3R10 at equal exposure\n"
-        "5 configurations x 3 seeds. 1,620,000 image exposures per run.",
-        25,
-    )
-    frame = slides[2].shapes.add_table(6, 3, Inches(0.75), Inches(1.45), Inches(7.3), Inches(3.85)).table
-    values = [["Setting", "Accuracy (%)", "Macro-F1"]] + [
-        [
-            label,
-            f"{100 * float(summary[s]['accuracy_mean']):.2f} +/- {100 * float(summary[s]['accuracy_sd']):.2f}",
-            f"{float(summary[s]['macro_f1_mean']):.4f}",
-        ]
-        for s, label in zip(SETTINGS, LABELS)
-    ]
-    frame.columns[0].width = Inches(3)
-    frame.columns[1].width = Inches(2.55)
-    frame.columns[2].width = Inches(1.75)
-    for r, row in enumerate(values):
-        for c, text in enumerate(row):
-            cell = frame.cell(r, c)
-            cell.text = text
-            cell.fill.solid()
-            cell.fill.fore_color.rgb = RGBColor(238, 242, 247) if r == 0 else RGBColor(255, 255, 255)
-            for p in cell.text_frame.paragraphs:
-                p.font.name = "Arial"
-                p.font.size = Pt(20)
-                p.font.bold = r == 0
-                p.font.color.rgb = navy
-    textbox(
-        slides[2],
-        8.55,
-        1.75,
-        3.95,
-        3.8,
-        "Strong skew: -5.52 pp versus IID\n\nE3R10: +0.04 pp versus E1R30 with 20 fewer rounds",
-        26,
-        True,
-    )
-    textbox(slides[2], 0.8, 5.7, 11.9, 0.6, "Final checkpoints. Mean +/- sample SD over three seeds.", 20)
-    textbox(
-        slides[3],
-        0.7,
-        1.4,
-        7.0,
-        4.8,
-        "Label skew reduces global quality in this protocol.\n"
-        "Fewer rounds retain similar observed mean accuracy at fixed exposure.\n"
-        "Limits: one dataset/CNN, three seeds, simulated clients.\n"
-        "Demo: strong seed 42, one test prediction from a trained checkpoint.",
-        24,
-    )
-    slides[3].shapes.add_picture(
-        str(REPORT / "figures/07_error_examples.png"), Inches(8.0), Inches(2.05), width=Inches(4.6)
-    )
-    textbox(slides[3], 8.05, 5.0, 4.55, 1.4, "Shirt recall: 0.2690\nShirt to T-shirt/top: 267 errors (seed 42)", 21)
-    target = REPORT / "9_27_Overview.pptx"
-    prs.save(target)
-    assert len(prs.slides) == 4
-    return target
-
-
 def generate_report_figures():
     """Create legible print figures from recorded counts and per-class metrics."""
     import matplotlib
@@ -592,14 +453,11 @@ def generate_report_figures():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--report-only", action="store_true")
-    args = parser.parse_args()
+    parser.parse_args()
     generate_report_figures()
-    source, summary, members, words = materialize()
+    source, _, members, words = materialize()
     pdf = build_pdf(source, members)
-    if not args.report_only:
-        build_slides(summary)
-    print(f"Report: {pdf}. Abstract: {words} words. Overview: 4 slides.")
+    print(f"Report: {pdf}. Abstract: {words} words.")
 
 
 if __name__ == "__main__":

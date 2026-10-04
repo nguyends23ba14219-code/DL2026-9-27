@@ -402,7 +402,7 @@ python experiments/fetch_artifacts.py
 streamlit run demo/app.py
 # Retrieve every recorded round for checkpoint inspection:
 python experiments/fetch_artifacts.py --full
-# Rebuild the submission PDF and overview deck:
+# Rebuild the submission PDF:
 python -m pip install -r requirements-docs.txt
 python experiments/build_submission.py
 ```

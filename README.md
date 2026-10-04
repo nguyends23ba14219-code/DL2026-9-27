@@ -108,6 +108,8 @@ python -m pip install -r requirements-docs.txt
 python experiments/build_submission.py
 ```
 
+Overview PPTX được cung cấp sẵn, chỉnh sửa được trong PowerPoint. Script nguồn JavaScript `experiments/build_overview.mjs` dùng Artifact Tool khi môi trường có thư viện này; không cần nó để tái lập thực nghiệm hoặc PDF.
+
 PDF builder dùng Times New Roman hoặc DejaVu Serif, kiểm tra abstract 150–200 từ và đủ 18 trang tổng: bìa + mục lục + 13 trang nội dung + References + 2 trang Appendix. Có 7 tài liệu tham khảo. Sửa `reports/members.json` nếu nhóm cập nhật trách nhiệm, sau đó build lại.
 
 ## Cấu trúc
