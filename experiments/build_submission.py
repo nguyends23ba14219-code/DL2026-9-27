@@ -229,7 +229,53 @@ def inline(text):
     escaped = html.escape(text)
     escaped = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", escaped)
     escaped = re.sub(r"`(.*?)`", r'<font size="9">\1</font>', escaped)
+    escaped = re.sub(
+        r"\b(TP|FP|FN|N|M|D|S|F|P|R|f|p|w|n|x)_(test|cc|k|c|w|t|i)\b",
+        lambda m: f"<i>{m[1]}</i><sub>{m[2]}</sub>",
+        escaped,
+    )
+    escaped = re.sub(r"\blambda\b", "λ", escaped)
+    escaped = re.sub(r"\beta\b", "η", escaped)
     return re.sub(r"https?://[^\s<]+", lambda m: f'<link href="{m[0]}" color="#17386a">{m[0]}</link>', escaped)
+
+
+class Equation(Flowable):
+    """A numbered display equation rendered as embedded vector math glyphs."""
+
+    def __init__(self, expression, number, width):
+        from matplotlib.font_manager import FontProperties
+        from matplotlib.mathtext import MathTextParser
+
+        super().__init__()
+        self.number, self.width = number, width
+        self.math = MathTextParser("path").parse(
+            "$" + expression + "$",
+            dpi=72,
+            prop=FontProperties(size=12, math_fontfamily="stix"),
+        )
+        if self.math.width > width - 50:
+            raise ValueError(f"Equation {number} exceeds the available width")
+        self.height = float(self.math.height) + 10
+        self.spaceBefore, self.spaceAfter = 2, 8
+        for font, _, _, _, _ in self.math.glyphs:
+            name = "Math" + Path(font.fname).stem
+            if name not in pdfmetrics.getRegisteredFontNames():
+                pdfmetrics.registerFont(TTFont(name, font.fname))
+
+    def draw(self):
+        canvas = self.canv
+        offset = (self.width - self.math.width) / 2
+        baseline = float(self.math.depth) + 5
+        canvas.saveState()
+        canvas.setFillColor(colors.black)
+        for font, size, code, x, y in self.math.glyphs:
+            canvas.setFont("Math" + Path(font.fname).stem, size)
+            canvas.drawString(offset + float(x), baseline + float(y), chr(code))
+        for x, y, width, height in self.math.rects:
+            canvas.rect(offset + float(x), baseline + float(y), float(width), float(height), stroke=0, fill=1)
+        canvas.setFont("Academic", 11)
+        canvas.drawRightString(self.width, baseline, f"({self.number})")
+        canvas.restoreState()
 
 
 def build_pdf(source, members):
@@ -288,7 +334,7 @@ def build_pdf(source, members):
     def para(text, style="body"):
         return Paragraph(inline(text), styles[style])
 
-    def make_table(rows):
+    def make_table(rows, padding=5):
         n = len(rows[0])
         fractions = [1 / n] * n
         if n == 2:
@@ -299,6 +345,8 @@ def build_pdf(source, members):
             fractions = [0.21, 0.10, 0.18, 0.18, 0.19, 0.14]
         if n == 3:
             fractions = [0.28, 0.18, 0.54]
+        if n == 4:
+            fractions = [0.18, 0.36, 0.28, 0.18]
         cells = [[para(c, "head" if r == 0 else "cell") for c in row] for r, row in enumerate(rows)]
         t = Table(cells, colWidths=[width * f for f in fractions], repeatRows=1, hAlign="CENTER")
         t.setStyle(
@@ -310,8 +358,8 @@ def build_pdf(source, members):
                     ("LINEBELOW", (0, -1), (-1, -1), 0.7, colors.black),
                     ("LEFTPADDING", (0, 0), (-1, -1), 5),
                     ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-                    ("TOPPADDING", (0, 0), (-1, -1), 5),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                    ("TOPPADDING", (0, 0), (-1, -1), padding),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), padding),
                 ]
             )
         )
@@ -400,6 +448,17 @@ def build_pdf(source, members):
                     address = html.escape(url[0])
                     blocks.append(Paragraph(f'<link href="{address}">{address}</link>', styles["reference_url"]))
                 flow.append(KeepTogether(blocks))
+            elif line == "$$":
+                expression = []
+                i += 1
+                while i < len(lines) and lines[i].strip() != "$$":
+                    expression.append(lines[i].strip())
+                    i += 1
+                formula = " ".join(expression)
+                tag = re.search(r"\\tag\{(\d+)\}", formula)
+                if tag is None:
+                    raise ValueError("Every display equation must have a number")
+                flow.append(Equation(formula[: tag.start()].strip(), int(tag[1]), width - 12))
             elif line.startswith("## "):
                 flow.append(para(line[3:], "h2"))
             elif line.startswith("```"):
@@ -416,7 +475,7 @@ def build_pdf(source, members):
                     if not all(re.fullmatch("[-:]+", c) for c in cells):
                         rows.append(cells)
                     i += 1
-                flow += make_table(rows)
+                flow += make_table(rows, padding=3 if page_i == 4 else 5)
                 continue
             elif line.startswith("!["):
                 m = re.match(r"!\[(.*?)\]\((.*?)\)", line)
@@ -429,7 +488,9 @@ def build_pdf(source, members):
             else:
                 text = [line]
                 while (
-                    i + 1 < len(lines) and lines[i + 1].strip() and not lines[i + 1].startswith(("#", "|", "![", "```"))
+                    i + 1 < len(lines)
+                    and lines[i + 1].strip()
+                    and not lines[i + 1].startswith(("#", "|", "![", "```", "$$"))
                 ):
                     i += 1
                     text.append(lines[i].strip())

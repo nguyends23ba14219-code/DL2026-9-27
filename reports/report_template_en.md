@@ -77,11 +77,13 @@ The processed data are reproducible from the official download and committed spl
 
 ## 1. Balanced cyclic label skew
 
-For each run seed, a deterministic random permutation pi specifies the ten classes. Client k has two dominant labels: pi[k] and pi[(k+1) mod 10]. Each label is dominant at exactly two clients. The prescribed class proportion is:
+For each run seed, a deterministic class permutation defines the dominant-label set S_k: the two consecutive labels assigned to client k, with cyclic wraparound. Each label is dominant at exactly two clients. For C = 10 classes, the prescribed local class proportion is:
 
-**p(k,c) = (1 - lambda)/10 + (lambda/2) I[c is dominant at client k].**
+$$
+p_k(c)=\frac{1-\lambda}{C}+\frac{\lambda}{2}\mathbf{1}_{\{c\in S_k\}},\qquad C=10. \tag{1}
+$$
 
-The indicator is one for either dominant class and zero otherwise. Lambda controls the mixture of globally uniform data and concentrated client data. This construction keeps the global class prior uniform, which avoids conflating local heterogeneity with a changed overall training distribution.
+Here p_k(c) is the proportion of class c at client k. The indicator is one for a dominant class and zero otherwise. The skew parameter lambda is 0, 0.5 or 0.9. Each client has 5,400 images; its class quota is 5,400 p_k(c). The construction preserves a uniform global class prior.
 
 | Setting | Lambda | Dominant class | Other class | Images/client | TV |
 |---|---:|---:|---:|---:|---:|
@@ -95,16 +97,22 @@ Table 2. Exact training quotas; each client has two dominant and eight other cla
 
 ## 2. Integrity and interpretation
 
-For every setting, each matrix row and column sums to 5,400. Within a class, shuffled indices are allocated once without replacement. The union of all client sets equals the training pool, and no pair of client sets overlaps. The same class permutation is used across severities within a run seed. Between seeds, both class pairings and allocated image identities vary.
+Each matrix row and column sums to 5,400. Shuffled indices are allocated without replacement, so disjoint client sets exactly cover the training pool. The class permutation is fixed across severities within a seed; both class pairings and image assignments vary between seeds.
 
-Total variation from the uniform class distribution is **TV = 0.5 sum(c) |p(k,c) - 0.1| = 0.8 lambda**. The severity values therefore have a quantitative interpretation. Strong clients retain all ten classes: 92% of their images belong to two dominant labels, and the remaining 8% cover the other labels. This study investigates synthetic label skew. It does not model differing camera domains, label corruption or unequal quantities.
+Total variation measures the distance between a client's label proportions and the uniform class distribution:
+
+$$
+\mathrm{TV}_k=\frac{1}{2}\sum_{c=0}^{C-1}\left|p_k(c)-\frac{1}{C}\right|=0.8\lambda. \tag{2}
+$$
+
+Eq. (2) sums two dominant-class deviations of 0.4 lambda and eight others of 0.1 lambda. Thus TV is 0, 0.40 or 0.72. Strong clients retain all ten classes, with 92% of images in two dominant labels. This synthetic study excludes camera-domain shifts, label corruption and unequal quantities.
 
 <!-- page -->
 # V. Methods
 
 ## 1. Centralized baseline and shared CNN
 
-The baseline trains one CNN on minibatches shuffled from the complete 54,000-image training pool. It receives the same preprocessing, architecture, initialization seed, loss, learning rate and thirty complete passes as the federated runs. Its role is to quantify the effect of replacing global minibatch mixing with local training and aggregation. It is a reference under this protocol, not a universal performance bound.
+The centralized CNN trains on all 54,000 images with the same preprocessing, architecture, seed, loss, learning rate and thirty passes as the federated runs. It provides a protocol-specific reference.
 
 | Layer | Configuration | Output shape | Parameters |
 |---|---|---|---:|
@@ -120,26 +128,50 @@ The baseline trains one CNN on minibatches shuffled from the complete 54,000-ima
 
 Table 3. Architecture and parameter count, including biases.
 
-Convolutions learn local spatial features, ReLU introduces nonlinearity and pooling reduces feature-map resolution. The final layers combine learned features into ten classification scores. The model is trained from scratch. No pretrained weights, BatchNorm or dropout introduce extra state into aggregation.
+Convolutions, ReLU and pooling produce features for ten class scores. Training starts from scratch, with no pretrained weights, BatchNorm or dropout adding state to aggregation.
 
 ## 2. Objective and optimizer
 
-For logits z and correct label y, cross entropy is **L(z,y) = -z[y] + log(sum(c) exp(z[c]))**. PyTorch CrossEntropyLoss receives raw logits. A separate softmax is used only when displaying probabilities during inference. The predicted label is the index of the largest logit.
+For the ten logits z produced by the CNN and correct label y, the per-image cross-entropy loss is:
 
-Both methods use SGD with learning rate 0.01, batch size 64, zero momentum and zero weight decay. The final partial minibatch is retained. Centralized and local training call the same minibatch implementation, reducing differences caused by separate code paths. Local optimizer state is restarted each round. With zero momentum, no optimizer history persists beyond the parameter updates.
+$$
+\ell(z,y)=-z_y+\log\left(\sum_{c=0}^{C-1}e^{z_c}\right)=-\log p_w(y\mid x). \tag{3}
+$$
+
+Here w denotes CNN parameters, x the image and p_w softmax probabilities. CrossEntropyLoss averages Eq. (3) over raw logits in a minibatch; inference selects the largest logit.
+
+Both training methods use the same SGD update. For client k, round t and local minibatch step s:
+
+$$
+w_{t,s+1}^{(k)}=w_{t,s}^{(k)}-\eta\nabla_w\left[\frac{1}{|\mathcal{B}_{k,t,s}|}\sum_{(x,y)\in\mathcal{B}_{k,t,s}}\ell(f_w(x),y)\right]_{w=w_{t,s}^{(k)}}. \tag{4}
+$$
+
+Minibatches contain up to 64 images; eta = 0.01. Index s counts minibatch steps; E counts full local epochs. Momentum and weight decay are zero. Partial batches are retained, and local weights reset to the global snapshot each round.
 
 ## 3. Comparison strategy
 
-We compare final global models, not an ensemble of local predictions. Shared initialization hashes are equal across all five configurations within each seed. This pairing reduces one source of variability, but data ordering and optimization trajectories still differ. Accuracy, macro metrics and cross entropy describe complementary aspects of classifier quality.
+Final global models share equal initialization hashes across all five settings within each seed. Pairing controls initialization, while data ordering and optimization trajectories may differ. Accuracy, macro metrics and cross entropy describe complementary aspects of classification quality.
 
 <!-- page -->
 # V. Methods (continued)
 
 ## 4. Main method: FedAvg
 
-Let D(k) contain n(k) local examples and let N be the sum of all n(k). The global empirical objective is **F(w) = sum(k) (n(k)/N) F(k,w)**, where F(k,w) averages cross entropy over D(k). At round t, the server broadcasts a snapshot w(t). Every client starts from that same snapshot and performs E local epochs. Its updated weights are w(k,t+1).
+Let D_k contain n_k training examples at client k. With K = 10 clients indexed from 0 to K - 1, local and global empirical losses are:
 
-The server computes **w(t+1) = sum(k) (n(k)/N) w(k,t+1)** [1]. All ten clients have n(k)=5,400, so each receives weight 0.1. The code nevertheless uses general sample-count weighting and tests unequal counts with a known arithmetic answer. Aggregation averages every floating parameter tensor, including biases.
+$$
+F_k(w)=\frac{1}{n_k}\sum_{(x,y)\in D_k}\ell(f_w(x),y),\qquad F(w)=\sum_{k=0}^{K-1}\frac{n_k}{N}F_k(w). \tag{5}
+$$
+
+Here f_w(x) is the CNN logit vector and N = 54,000 is the total training size. Every client starts from the same global snapshot w_t and performs E local epochs using Eq. (4).
+
+The server aggregates these client models using FedAvg [1]:
+
+$$
+w_{t+1}=\sum_{k=0}^{K-1}\frac{n_k}{N}w_{t+1}^{(k)}=\frac{1}{10}\sum_{k=0}^{9}w_{t+1}^{(k)}. \tag{6}
+$$
+
+The returned local weights in Eq. (6) receive weight 0.1 because every client participates with n_k = 5,400. General sample-count weighting is tested with unequal counts. Aggregation averages all floating parameter tensors, including biases, to produce one global model.
 
 ## 5. Round procedure
 
@@ -159,24 +191,24 @@ for round t = 1, ..., R:
 
 Listing 1. FedAvg control flow; test evaluation occurs after training.
 
-The snapshot and returned states are independent copies. Reusing mutable tensor references would corrupt the averaging operation. Training clients sequentially in a Python loop is computational scheduling only: each receives the same global starting point. It does not let client k+1 continue from the trained weights of client k.
+Snapshots and returned states are independent copies, preventing aliasing during aggregation. Sequential client execution is scheduling only: each client receives the same global starting point, rather than the previous client's trained weights.
 
 ## 6. State, evaluation and resume
 
-`src/federated/server.py` coordinates clients, `client.py` resets local state, and `fedavg.py` performs aggregation. The aggregation function has no training-dataset argument. It checks compatible tensor keys, shapes, dtypes and finite values. The simulation process initially loads all data to construct subsets, so the API design should not be mistaken for physical isolation across ten machines.
+`server.py` coordinates clients, `client.py` resets local state, and `fedavg.py` aggregates tensors and sample counts, checking keys, shapes, dtypes and finite values. The simulation loads all data to construct subsets; this API does not establish physical isolation across machines.
 
-Checkpoints save the global state, configuration and completed history. Data-order seeds are derived from the run seed, round, client and epoch. Resume restarts from the last completed round, discarding a partially completed round. A test compares resumed and uninterrupted final parameter hashes. The demo loads a trained global checkpoint and performs inference without training.
+Checkpoints retain global weights, configuration and history. Data-order seeds depend on the run seed, round, client and epoch. Resume restarts from the last completed round and discards partial-round work; a test verifies the final parameter hash against uninterrupted training. The demo performs inference from a trained global checkpoint.
 
 <!-- page -->
 # VI. Experimental Setup
 
 ## 1. Three required setups
 
-**Setup 1: baseline versus main method.** Compare centralized CNN with FedAvg IID. Both use the same 54,000 training images and thirty effective passes, but differ in how minibatches and model updates are coordinated. This setup answers RQ1.
+**Setup 1: baseline versus main method (RQ1).** Compare centralized CNN with FedAvg IID on the same 54,000 images and thirty passes. Their minibatch mixing and update coordination differ.
 
 **Setup 2: main research experiment.** Compare FedAvg IID, mild and strong label skew with E=1 and R=30. This changes the client distribution while holding model, optimizer, quantities, participation and budget fixed. It answers RQ2.
 
-**Setup 3: ablation and seed robustness.** Compare strong E1R30 against strong E3R10. The two runs share exactly the same partition and initial state within a seed. E and R change together to keep the exposure budget fixed. Each of the five configurations runs with seeds 42, 43 and 44, yielding fifteen completed runs. This setup answers RQ3 and measures seed sensitivity.
+**Setup 3: ablation and seed robustness (RQ3).** Compare strong E1R30 and E3R10, sharing partition and initialization within a seed. E and R change together at fixed exposure. Five settings and seeds 42, 43 and 44 produce fifteen completed runs.
 
 | Configuration | Lambda | Local epochs E | Rounds / epochs | Exposures/run |
 |---|---:|---:|---|---:|
@@ -190,42 +222,66 @@ Table 4. Locked experiment matrix. Each row uses all three run seeds.
 
 ## 2. Fairness and budget accounting
 
-Each run processes 54,000 x 30 = 1,620,000 training-image exposures. Across fifteen runs the total is 24,300,000. Retaining the final partial batch gives centralized 30 x ceil(54,000/64) = 25,320 optimizer steps. Federated settings use 30 x 10 x ceil(5,400/64) = 25,500 local optimizer steps. Thus image exposure is equal, while optimizer steps differ slightly.
+With full participation, R rounds and E local epochs per round, the number of training-image exposures is:
 
-Aggregation frequency and minibatch composition are intrinsic method differences. Equal image exposure does not imply equal optimization trajectories or runtime. The E3 comparison is a fixed-compute aggregation trade-off, not an isolated intervention on local epochs with all other variables unchanged.
+$$
+B=R E\sum_{k=0}^{K-1}n_k=R E N=30\times54{,}000=1{,}620{,}000. \tag{7}
+$$
+
+Both E1R30 and E3R10 have R E = 30; centralized training also makes 30 passes. Across fifteen runs the total is 24,300,000 exposures. Retaining partial batches gives 25,320 centralized and 25,500 federated optimizer steps per run. Equal image exposure therefore allows a slight difference in optimizer-step counts.
+
+Equal exposure does not imply identical optimization or runtime: aggregation frequency and minibatch composition differ. The E3 comparison changes local epochs and rounds together, measuring aggregation frequency at fixed exposure.
 
 ## 3. Execution environment
 
 {{ENVIRONMENT}}
 
-Recorded runs use one CPU thread per process on macOS arm64. Some processes ran concurrently, so wall time includes resource contention. We make no hardware-speed or network-latency claim. The source training commit, library versions, initial-state hash, configuration and partition identity are retained in every manifest.
+Runs use one CPU thread per process on macOS arm64. Concurrent processes may affect wall time; no hardware-speed or network-latency claim is made. Manifests retain the training commit, library versions, initial hash, configuration and partition identity.
 
 <!-- page -->
 # VI. Experimental Setup (continued)
 
 ## 4. Evaluation metrics
 
-For a confusion matrix C with true labels in rows and predictions in columns, **accuracy = sum(c) C(c,c) / N**. For class c, precision is TP(c)/(TP(c)+FP(c)) and recall is TP(c)/(TP(c)+FN(c)). F1(c) is their harmonic mean. Macro precision, recall and F1 average the corresponding class scores over all ten labels. Zero denominators produce zero scores.
+Let M be the confusion matrix, with true labels in rows and predicted labels in columns, and N_test = 10,000. Test accuracy is:
 
-Because official test support is 1,000 images per class, macro recall equals accuracy. Macro-F1 still differs because class precision and recall interact nonlinearly. Cross entropy averages the correct-label negative log probability over all test examples. Loss accumulation weights the partial final batch by its actual size.
+$$
+\mathrm{Accuracy}=\frac{1}{N_{\mathrm{test}}}\sum_{c=0}^{C-1}M_{cc}. \tag{8}
+$$
+
+For class c, TP_c = M_cc, FP_c counts false positives and FN_c counts false negatives. Precision, recall and macro-F1 are:
+
+$$
+P_c=\frac{\mathrm{TP}_c}{\mathrm{TP}_c+\mathrm{FP}_c},\qquad R_c=\frac{\mathrm{TP}_c}{\mathrm{TP}_c+\mathrm{FN}_c}. \tag{9}
+$$
+
+$$
+\mathrm{MacroF1}=\frac{1}{C}\sum_{c=0}^{C-1}F1_c,\qquad F1_c=\frac{2P_cR_c}{P_c+R_c},\qquad C=10. \tag{10}
+$$
+
+Zero denominators give zero scores. Macro precision and recall average class scores; equal test support makes macro recall equal accuracy. Test loss averages Eq. (3) over all images.
 
 ## 5. Checkpoint and test protocol
 
-The primary table evaluates the final checkpoint after the fixed budget. A secondary table evaluates the checkpoint with the highest validation accuracy, breaking ties at the earliest round or epoch. Test data are evaluated after training and after validation checkpoint selection. The recorded protocol states that test curves are descriptive and do not determine hyperparameters or checkpoint choice.
+Primary results use the final-budget checkpoint. Secondary results use highest validation accuracy, with earliest-point ties. Testing follows training and validation selection; test curves are descriptive and do not select hyperparameters or checkpoints.
 
-The report retains the originally recorded experimental outputs. Rechecking their metrics verifies internal consistency and data coverage. It does not independently establish every historical decision about when a researcher inspected results. No new hyperparameter selection was performed for this report.
+Auditing the recorded outputs verifies consistency and coverage, without establishing every historical decision about inspecting test results. No new hyperparameter selection was performed.
 
 ## 6. Variability and convergence indicator
 
-For three seeds, the reported standard deviation is the sample SD: **s = sqrt(sum(i) (x(i) - mean(x))^2 / (3 - 1))**. Accuracy is expressed in percent and accuracy differences in percentage points. Other metrics remain on their native scales. We also report individual seed values in Appendix B.
+Across seeds 42, 43 and 44, the metric mean and sample standard deviation are:
 
-R@80 denotes the first post-initialization validation point starting a sequence of three consecutive recorded points with accuracy at least 80%. When no such sequence appears, the result is recorded as not reached. The indicator is descriptive, not a convergence proof. Three points represent different effective training exposure for E1 and E3, so comparisons must retain the epoch context.
+$$
+\bar{x}=\frac{1}{3}\sum_{i=1}^{3}x_i,\qquad s=\sqrt{\frac{1}{3-1}\sum_{i=1}^{3}(x_i-\bar{x})^2}. \tag{11}
+$$
+
+Here x_i is run i's metric. Tables report mean +/- s, with accuracy in percent and its differences in percentage points. Other scales are unchanged; Appendix B lists all runs.
+
+R@80 starts the first three consecutive post-initialization validation points at or above 80%, or is not reached. It is descriptive, not a convergence proof. Exposure differs for E1 and E3, requiring epoch context.
 
 ## 7. Integrity and reproducibility checks
 
-An independent audit recomputes accuracy and macro scores from the 10,000 saved test predictions per run. It also checks complete budgets, equal initial hashes within seeds, identical strong E1/E3 partitions, split coverage and consistency of final histories. The test suite checks weighted averaging, no aliasing, local snapshot resets, known-answer metrics, shape and parameter count, tiny-dataset learning and deterministic resume.
-
-PyTorch reproducibility guidance [7] cautions that results may vary between platforms and releases. Seeds and saved artifacts support reproduction in the recorded environment. CPU, CUDA and MPS execution are supported options, but this report's official numbers were produced on CPU.
+The audit checks all 10,000 predictions per run, budgets, paired initialization, partitions, split coverage and histories. Tests cover aggregation, aliasing, snapshot resets, metrics, CNN shape and size, tiny-dataset learning and deterministic resume.
 
 <!-- page -->
 # VII. Results and Discussion
@@ -414,3 +470,5 @@ The demo uses trained global checkpoints and a fixed 100-image official-test sub
 `outputs/splits/seed_2026.npz` stores the fixed split. `outputs/partitions/` stores client indices and count manifests. Each folder in `outputs/runs/` holds configuration, source/environment manifest, training history, post-hoc test history, final metrics and predictions. `outputs/tables/` contains summary, per-seed, class/client and error tables. `outputs/figures/` contains the corresponding plots, including losses and confusion matrices.
 
 `outputs/audit.json` reports integrity checks. `artifacts/release_manifest.json` identifies downloadable model packages. `DATA.md` specifies the complete dataset procedure. The four-slide overview uses a three-minute presentation plan, followed by twelve minutes of examiner questions. All team members should be able to explain the data split, round snapshot, weighting formula and limits of the ablation.
+
+PyTorch [7] cautions that results vary across platforms and releases. Seeds and saved artifacts support reproduction in the recorded environment. CPU, CUDA and MPS are supported; all official results here use CPU.
