@@ -26,12 +26,14 @@ def seed_all(seed):
 
 
 def state_hash(state):
-    h = hashlib.sha256()
+    """Hash tensor contents in a stable key order for initialization/resume checks."""
+    digest = hashlib.sha256()
     for key, value in sorted(state.items()):
-        h.update(key.encode())
-        h.update(value.detach().cpu().contiguous().numpy().tobytes())
-    return h.hexdigest()
+        digest.update(key.encode())
+        digest.update(value.detach().cpu().contiguous().numpy().tobytes())
+    return digest.hexdigest()
 
 
 def snapshot(model):
-    return {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+    """Copy weights to CPU so later client updates cannot mutate the broadcast."""
+    return {key: tensor.detach().cpu().clone() for key, tensor in model.state_dict().items()}

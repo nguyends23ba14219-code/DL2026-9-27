@@ -4,12 +4,15 @@ from src.utils.seed import snapshot
 
 
 def federated_round(model, x, y, clients, config, round_index):
+    """Broadcast once, train all clients, then replace global weights with FedAvg."""
     global_state = snapshot(model)
-    states, counts, stats = [], [], []
-    for k, indices in enumerate(clients):
-        state, local = client_update(model, global_state, x, y, indices, config, round_index, k)
-        states.append(state)
-        counts.append(local["n_samples"])
-        stats.append(local)
-    model.load_state_dict(fedavg(states, counts))
-    return {key: sum(s[key] for s in stats) for key in ("loss_sum", "examples_seen", "optimizer_steps")}
+    client_states, sample_counts = [], []
+    totals = {"loss_sum": 0, "examples_seen": 0, "optimizer_steps": 0}
+    for client_id, indices in enumerate(clients):
+        state, stats = client_update(model, global_state, x, y, indices, config, round_index, client_id)
+        client_states.append(state)
+        sample_counts.append(stats["n_samples"])
+        for key in totals:
+            totals[key] += stats[key]
+    model.load_state_dict(fedavg(client_states, sample_counts))
+    return totals

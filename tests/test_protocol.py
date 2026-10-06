@@ -101,17 +101,18 @@ def fake_data():
     }
 
 
-def test_resume_matches_uninterrupted_and_rejects_config_change(tmp_path, monkeypatch):
+@pytest.mark.parametrize("mode,local_epochs", [("centralized", 1), ("federated", 1), ("federated", 3)])
+def test_resume_matches_uninterrupted_and_rejects_config_change(tmp_path, monkeypatch, mode, local_epochs):
     import src.runner as runner
 
     cfg = {
         "seed": 42,
         "split_seed": 2026,
-        "mode": "federated",
+        "mode": mode,
         "setting": "test",
         "lambda": 0.9,
         "rounds": 2,
-        "local_epochs": 1,
+        "local_epochs": local_epochs,
         "batch_size": 64,
         "learning_rate": 0.01,
         "device": "cpu",
@@ -121,17 +122,18 @@ def test_resume_matches_uninterrupted_and_rejects_config_change(tmp_path, monkey
     data = fake_data()
     full = run(cfg, data=data)
     cfg2 = {**cfg, "output_dir": str(tmp_path / "resumed")}
-    original = runner.federated_round
+    step_name = "centralized_epoch" if mode == "centralized" else "federated_round"
+    original = getattr(runner, step_name)
 
     def interrupted(*args):
         if args[-1] == 2:
             raise KeyboardInterrupt()
         return original(*args)
 
-    monkeypatch.setattr(runner, "federated_round", interrupted)
+    monkeypatch.setattr(runner, step_name, interrupted)
     with pytest.raises(KeyboardInterrupt):
         run(cfg2, data=data)
-    monkeypatch.setattr(runner, "federated_round", original)
+    monkeypatch.setattr(runner, step_name, original)
     resumed = run(cfg2, resume=True, data=data)
     final1 = torch.load(full / "checkpoints/round_002.pt", weights_only=True)
     final2 = torch.load(resumed / "checkpoints/round_002.pt", weights_only=True)
@@ -144,6 +146,56 @@ def test_resume_matches_uninterrupted_and_rejects_config_change(tmp_path, monkey
     changed["learning_rate"] = 0.02
     with pytest.raises(ValueError):
         run(changed, resume=True, data=data)
+
+
+@pytest.mark.parametrize("setting", ["centralized", "iid"])
+def test_test_evaluation_follows_training_and_cannot_select_checkpoint(tmp_path, monkeypatch, setting):
+    import src.evaluation.post_training as post_training
+    import src.runner as runner
+
+    config = runner.load_config(f"configs/{setting}.yaml", seed=42)
+    config.update(rounds=2, device="cpu", output_dir=str(tmp_path))
+    events = []
+    validation_scores = iter([0.2, 0.8, 0.8])  # Rounds 1 and 2 tie; the earliest must win.
+    test_scores = iter([0.95, 0.4, 0.6])  # Test prefers round 0; selection must ignore this.
+    step_name = "centralized_epoch" if setting == "centralized" else "federated_round"
+    original_step = getattr(runner, step_name)
+    original_evaluate = runner.evaluate
+    trained_states = {}
+
+    def train_step(*args):
+        stats = original_step(*args)
+        trained_states[args[-1]] = state_hash(snapshot(args[0]))
+        events.append("train")
+        return stats
+
+    def validation(*args, **kwargs):
+        metrics, labels, predictions = original_evaluate(*args, **kwargs)
+        metrics["accuracy"] = next(validation_scores)
+        events.append("validation")
+        return metrics, labels, predictions
+
+    def after_training(model, x, y, indices=None):
+        metrics, labels, predictions = original_evaluate(model, x, y, indices)
+        if indices is None:
+            metrics["accuracy"] = next(test_scores)
+            events.append("test")
+        else:
+            # Local subsets must use the final global model, not the validation winner.
+            assert state_hash(snapshot(model)) == trained_states[2]
+            events.append("local_validation")
+        return metrics, labels, predictions
+
+    monkeypatch.setattr(runner, step_name, train_step)
+    monkeypatch.setattr(runner, "evaluate", validation)
+    monkeypatch.setattr(post_training, "evaluate", after_training)
+    path = run(config, data=fake_data())
+    result = json.loads((path / "final_metrics.json").read_text())
+    assert events[:8] == ["validation", "train", "validation", "train", "validation", "test", "test", "test"]
+    assert events[8:] == (["local_validation"] * 10 if setting == "iid" else [])
+    assert result["best_validation_round"] == 1
+    assert result["best_validation_test"]["accuracy"] == 0.4
+    assert result["final_test"]["accuracy"] == 0.6
 
 
 def test_can_overfit_tiny_dataset():

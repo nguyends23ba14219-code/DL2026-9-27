@@ -6,7 +6,17 @@ Dự án Deep Learning hoàn chỉnh: tự triển khai **FedAvg bằng PyTorch*
 
 Bản nộp chính: [9_27_Report.pdf](reports/9_27_Report.pdf) (tiếng Anh, 13 trang nội dung chính), [nguồn Markdown](reports/9_27_Report.md) và [overview 4 slide / 3 phút](reports/9_27_Overview.pptx). Xem [DATA.md](DATA.md) và [đối chiếu yêu cầu nộp](docs/submission_requirements.md).
 
-Xem [sơ đồ kiến trúc, API và checkpoint/resume](docs/architecture.md).
+Xem [hướng dẫn đọc code, sơ đồ kiến trúc và checkpoint/resume](docs/architecture.md).
+
+## Đọc code nhanh
+
+Luồng chính: **config → dữ liệu và partition → CNN → SGD / FedAvg → validation → checkpoint → test sau train**.
+
+1. [main.py](main.py) và [src/runner.py](src/runner.py): nhận tham số, điều phối một run, lưu và khôi phục checkpoint.
+2. [src/data/partition.py](src/data/partition.py): tạo split cố định và quota Non-IID; training và script chuẩn bị dữ liệu dùng chung `prepare_partitions`.
+3. [src/models/cnn.py](src/models/cnn.py) và [src/training/local_train.py](src/training/local_train.py): kiến trúc CNN và vòng SGD dùng chung cho centralized/client.
+4. [src/federated/server.py](src/federated/server.py) → [client.py](src/federated/client.py) → [fedavg.py](src/federated/fedavg.py): broadcast cùng trọng số, train từng client, lấy trung bình có trọng số.
+5. [src/evaluation/metrics.py](src/evaluation/metrics.py) và [post_training.py](src/evaluation/post_training.py): tính metric, đánh giá các checkpoint sau khi training kết thúc.
 
 | Cấu hình | Test accuracy, mean ± SD (3 seed) |
 |---|---:|
@@ -128,8 +138,9 @@ src/data/                 # HTTPS download, stratified split, exact quotas, tens
 src/models/cnn.py         # 105.866 parameters
 src/federated/            # client, server, weighted FedAvg
 src/training/             # Cùng minibatch loop cho local và centralized
-src/evaluation/           # Metrics, CSV tables, plots và report generator
-src/runner.py             # Locked protocol, checkpoint/resume, post-hoc test
+src/evaluation/           # Metrics, post-training evaluation, tables, plots và report
+src/runner.py             # Điều phối training, validation, checkpoint/resume
+src/utils/                # Seed độc lập, snapshot/hash trọng số, atomic JSON
 experiments/              # Suite, analysis, artifact export/fetch, audit
 outputs/                  # Split/partition indices, run logs, metrics, figures, tables
 notebooks/                # Colab quickstart, gọi lại code repo
