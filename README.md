@@ -39,6 +39,14 @@ python experiments/prepare_data.py --output-dir outputs/reproduction
 
 Lệnh tải dữ liệu chính thức, kiểm tra checksum, tạo split và chín client partitions mà không train. Chi tiết version, nguồn, nhãn và preprocessing ở [DATA.md](DATA.md).
 
+Bộ dữ liệu đã xử lý đầy đủ có thể tải trực tiếp: [processed-data.zip](https://github.com/nguyends23ba14219-code/DL2026-9-27/releases/download/v1.0.0/processed-data.zip). Gói chứa đủ 70.000 ảnh float32 đã chuẩn hóa, nhãn, split 54k/6k và cả chín partition train/validation đúng với thực nghiệm.
+
+```bash
+python experiments/fetch_artifacts.py --data
+```
+
+Lệnh kiểm tra SHA-256 rồi giải nén vào `artifacts/processed-data/`. Xem ví dụ đọc dữ liệu tại [DATA.md](DATA.md). Đây là bản dữ liệu để tải/kiểm tra độc lập; `main.py` tiếp tục dùng loader dữ liệu chính thức và cùng preprocessing đã mô tả phía trên.
+
 ## Chạy một cấu hình
 
 Lần đầu tự tải Fashion-MNIST bằng HTTPS và kiểm tra checksum MD5 chính thức. Không commit cache dataset. Khuyến nghị `--output-dir outputs/reproduction` nếu muốn chạy lại kết quả đã có trong repo.
@@ -75,7 +83,7 @@ Các client có đúng 5.400 ảnh. Strong có 92% thuộc hai class ưu thế, 
 Repo lưu logs, metrics, predictions, split/partition indices, bảng và figures. Checkpoint mọi round nằm trong GitHub Release `v1.0.0`, tránh làm lớn Git history. Demo bundle chứa 15 checkpoint cuối và 100 ví dụ official test đã chọn cố định. Gói demo không cần GPU hoặc tải toàn bộ dataset.
 
 ```bash
-# Repo riêng tư: gh auth login trước, gh có quyền truy cập tài khoản của anh.
+# Repo public: tải trực tiếp bằng HTTPS, không cần tài khoản GitHub hoặc gh CLI.
 python experiments/fetch_artifacts.py
 streamlit run demo/app.py
 ```

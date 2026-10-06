@@ -11,6 +11,8 @@ Authoritative course source: `4_Exam Requirements.pdf`, Deep Learning Final Exam
 | Introduction and research question | Section I, approximately half a page following the abstract |
 | Related work: 0.5–1 page | Section II, one page |
 | Dataset URL/version, split/preprocessing/scripts | Section III and root `DATA.md` |
+| Downloadable processed experiment data | Public release `processed-data.zip`: all 70,000 normalized images, labels, split, nine partitions, manifests and license; SHA-256 in `artifacts/release_manifest.json` |
+| Demo link, if applicable | Local Streamlit demo with public model bundle; no hosted demo URL; this item is optional |
 | Baseline, main method, comparison strategy | Section V: centralized CNN and manually implemented FedAvg |
 | Setup 1: baseline vs main | Centralized versus FedAvg IID |
 | Setup 2: main research | IID/mild/strong balanced label skew |
@@ -29,12 +31,23 @@ Authoritative course source: `4_Exam Requirements.pdf`, Deep Learning Final Exam
 
 The course document sets the deadline at **08:00 on 7 October 2026**, through the course Google Classroom, submitted by the group leader. Nguyễn Duy Dũng should submit `9_27_Report.pdf` and the repository link using the course's actual Classroom form. The deadline's timezone is not stated in the source; the local course/user context is Vietnam time (UTC+7).
 
-The report and repository have been prepared; uploading to Google Classroom is a separate submission action. Ensure examiners have access to the private repository and release assets using the course's sharing process.
+The report and repository are prepared. The repository and release assets are public and can be accessed without a GitHub account. Uploading to Google Classroom is a separate submission action and has not been performed here.
+
+The group leader should attach the latest `9_27_Report.pdf` and include these links in the Classroom submission:
+
+- Repository: https://github.com/nguyends23ba14219-code/DL2026-9-27
+- Dataset documentation and official source: https://github.com/nguyends23ba14219-code/DL2026-9-27/blob/main/DATA.md
+- Complete processed dataset: https://github.com/nguyends23ba14219-code/DL2026-9-27/releases/download/v1.0.0/processed-data.zip
+- Optional local demo instructions: the README section "Kết quả và demo có sẵn". No hosted demo is claimed.
+
+Use the English report and four-slide overview. `report_vi.pdf` and `project27-defense.pptx` in the original release are older supplemental material. Updates after the submission deadline are not considered by the course.
 
 ## Evidence and artifact lifecycle
 
 The fifteen pre-existing official runs are retained. An audit recomputes metrics from saved predictions and verifies split/partition coverage and exposure budgets. Reporting edits do not create new experimental measurements. Each original manifest retains its original training source commit and environment.
 
 `experiments/prepare_data.py` prepares official files and indices without training. `experiments/package_artifacts.py --release-dir PATH --output-dir outputs` packages recorded checkpoints and fails if any intermediate round is missing. After creating a new package, upload its archives and matching generated manifest/checksum file together. Existing published `v1.0.0` downloads are verified against their actual SHA-256 values in `artifacts/release_manifest.json`.
+
+`experiments/package_processed_data.py --release-dir PATH` exports the complete normalized study dataset after verifying source MD5 checksums and comparing every regenerated split/partition array with the committed study. `experiments/fetch_artifacts.py --data` downloads this public archive, verifies SHA-256/size, and extracts it under `artifacts/processed-data/` without GitHub CLI or authentication.
 
 `experiments/build_submission.py` derives result tables and numeric discussion from committed CSV/JSON outputs, generates print-readable distribution/recall figures and builds the PDF. It rejects abstract-length or PDF-pagination violations. Edit the report template or `members.json`, then rerun the builder to keep PDF and source consistent.

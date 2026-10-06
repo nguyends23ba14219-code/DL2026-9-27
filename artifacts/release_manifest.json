@@ -11,6 +11,11 @@
       "sha256": "513d4073d2d5ee93cbe6ec3db13655b9755f59450093f3b43422884ce40a6323",
       "bytes": 158996542,
       "files": 405
+    },
+    "processed-data.zip": {
+      "sha256": "4607306b4ae6847468821a8295d5cbcedc8a5e43fc7ce87580f8aff734317246",
+      "bytes": 49274453,
+      "files": 25
     }
   },
   "demo_examples": {

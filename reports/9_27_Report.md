@@ -70,7 +70,7 @@ Images become float tensors with shape N x 1 x 28 x 28 and normalization **(uint
 
 `experiments/prepare_data.py` downloads the official files over HTTPS, verifies their official MD5 checksums, reproduces the split and saves all client partitions without training. `DATA.md` documents the dataset version, URLs, checksums, commands, label mapping and licensing. Processed tensors are deterministic transformations of official images, not a separately curated dataset.
 
-The processed data are reproducible from the official download and committed split/partition indices. The release contains an additional downloadable, checksum-verified demo subset of 100 official test images with their original indices. Dataset caches are excluded from Git. Appendix B records the exact commands and artifact locations.
+The processed data are reproducible from official files and committed indices. Public release v1.0.0 provides processed-data.zip with all 70,000 normalized images, labels, the 54k/6k split and nine client partitions. DATA.md links the archive and records its loading procedure; the release manifest verifies SHA-256. A separate 100-image test subset supports the demo. Dataset caches are excluded from Git.
 
 <!-- page -->
 # IV. Controlled Client Partitioning
@@ -508,6 +508,6 @@ The demo uses trained global checkpoints and a fixed 100-image official-test sub
 
 `outputs/splits/seed_2026.npz` stores the fixed split. `outputs/partitions/` stores client indices and count manifests. Each folder in `outputs/runs/` holds configuration, source/environment manifest, training history, post-hoc test history, final metrics and predictions. `outputs/tables/` contains summary, per-seed, class/client and error tables. `outputs/figures/` contains the corresponding plots, including losses and confusion matrices.
 
-`outputs/audit.json` reports integrity checks. `artifacts/release_manifest.json` identifies downloadable model packages. `DATA.md` specifies the complete dataset procedure. The four-slide overview uses a three-minute presentation plan, followed by twelve minutes of examiner questions. All team members should be able to explain the data split, round snapshot, weighting formula and limits of the ablation.
+`outputs/audit.json` records integrity checks; the release manifest identifies public model/data archives. `DATA.md` documents loading and reproduction. Run `python experiments/fetch_artifacts.py --data` to verify and extract the complete dataset. The four-slide overview lasts three minutes, with twelve minutes of questions. Members should explain the split, round snapshot, weighting and ablation limits.
 
-PyTorch [7] cautions that results vary across platforms and releases. Seeds and saved artifacts support reproduction in the recorded environment. CPU, CUDA and MPS are supported; all official results here use CPU.
+PyTorch [7] cautions that results vary by platform and release. Seeds and artifacts support reproduction in the recorded environment. CPU, CUDA and MPS are supported; official results use CPU.

@@ -72,12 +72,15 @@ def main():
         with archive.open("rb") as handle:
             digest = hashlib.file_digest(handle, "sha256").hexdigest()
         assets[name] = {"sha256": digest, "bytes": archive.stat().st_size, "files": len(files)}
+    manifest_path = artifacts / "release_manifest.json"
+    existing = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
     atomic_json(
-        artifacts / "release_manifest.json",
+        manifest_path,
         {
+            **existing,
             "tag": "v1.0.0",
             "repository": "nguyends23ba14219-code/DL2026-9-27",
-            "assets": assets,
+            "assets": {**existing.get("assets", {}), **assets},
             "demo_examples": {
                 "source": "Fashion-MNIST official test",
                 "selection": "first 10 official indices per class",
@@ -86,7 +89,10 @@ def main():
         },
     )
     (release_dir / "SHA256SUMS.txt").write_text(
-        "".join(f"{metadata['sha256']}  {name}\n" for name, metadata in assets.items())
+        "".join(
+            f"{metadata['sha256']}  {name}\n"
+            for name, metadata in json.loads(manifest_path.read_text())["assets"].items()
+        )
     )
     print(json.dumps(assets, indent=2))
 

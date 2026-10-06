@@ -1,9 +1,12 @@
 import json
+import hashlib
+import zipfile
 
 import numpy as np
 import pytest
 
 from experiments.package_artifacts import round_checkpoints
+from experiments.fetch_artifacts import verify_and_extract
 from experiments.prepare_data import prepare
 from src.data.partition import partition
 from src.utils.seed import stream_seed
@@ -34,3 +37,39 @@ def test_archive_rejects_missing_intermediate_round(tmp_path):
         round_checkpoints(tmp_path, 2)
     (directory / "round_001.pt").touch()
     assert len(round_checkpoints(tmp_path, 2)) == 3
+
+
+def test_public_archive_verifies_and_extracts(tmp_path):
+    archive = tmp_path / "data.zip"
+    with zipfile.ZipFile(archive, "w") as bundle:
+        bundle.writestr("artifacts/processed-data/README.md", "verified study data")
+    metadata = {"sha256": hashlib.sha256(archive.read_bytes()).hexdigest(), "bytes": archive.stat().st_size}
+    destination = tmp_path / "fresh-repository"
+    verify_and_extract(archive, metadata, destination)
+    assert (destination / "artifacts/processed-data/README.md").read_text() == "verified study data"
+
+
+@pytest.mark.parametrize("invalid", ["sha256", "bytes"])
+def test_archive_integrity_failure_does_not_extract(tmp_path, invalid):
+    archive = tmp_path / "data.zip"
+    with zipfile.ZipFile(archive, "w") as bundle:
+        bundle.writestr("data.txt", "study data")
+    metadata = {"sha256": hashlib.sha256(archive.read_bytes()).hexdigest(), "bytes": archive.stat().st_size}
+    metadata[invalid] = "0" * 64 if invalid == "sha256" else archive.stat().st_size + 1
+    destination = tmp_path / "fresh-repository"
+    with pytest.raises(RuntimeError, match="SHA-256 or size"):
+        verify_and_extract(archive, metadata, destination)
+    assert not destination.exists()
+
+
+def test_archive_traversal_rejected_before_any_extraction(tmp_path):
+    archive = tmp_path / "data.zip"
+    with zipfile.ZipFile(archive, "w") as bundle:
+        bundle.writestr("data.txt", "safe")
+        bundle.writestr("../outside.txt", "unsafe")
+    metadata = {"sha256": hashlib.sha256(archive.read_bytes()).hexdigest(), "bytes": archive.stat().st_size}
+    destination = tmp_path / "fresh-repository"
+    with pytest.raises(RuntimeError, match="Unsafe archive path"):
+        verify_and_extract(archive, metadata, destination)
+    assert not destination.exists()
+    assert not (tmp_path / "outside.txt").exists()

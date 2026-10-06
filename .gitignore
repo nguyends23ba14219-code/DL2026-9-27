@@ -11,6 +11,7 @@ outputs/runs/*/seed_*/.run.lock
 
 artifacts/models/
 artifacts/demo_examples.npz
+artifacts/processed-data/
 outputs/reproduction/
 
 node_modules/
